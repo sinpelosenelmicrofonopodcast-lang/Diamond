@@ -41,6 +41,11 @@ export async function GET(req: Request) {
       : endOfDay(now);
 
   const admin = getAdminSupabase();
+  const { data: biz } = await admin
+    .from("businesses")
+    .select("timezone")
+    .eq("id", ctx.businessId)
+    .maybeSingle();
   const { data, error: queryError } = await admin
     .from("appointments")
     .select("id, starts_at, status, client_email, customer_id, required_deposit_percent, required_deposit_cents, total_price_cents, external_payment_method, external_payment_status, external_payment_proof_url, services!appointments_service_id_fkey(name), staff_profiles(display_name)")
@@ -84,7 +89,7 @@ export async function GET(req: Request) {
     };
   });
 
-  return NextResponse.json({ appointments: enriched });
+  return NextResponse.json({ appointments: enriched, timezone: biz?.timezone || "UTC" });
 }
 
 export async function POST(req: Request) {

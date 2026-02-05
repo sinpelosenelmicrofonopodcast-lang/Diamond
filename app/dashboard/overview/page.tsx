@@ -29,6 +29,14 @@ export default function DashboardOverviewPage() {
     read_at?: string | null;
   }>>([]);
   const [alertsLoading, setAlertsLoading] = useState(true);
+  const [paymentsSummary, setPaymentsSummary] = useState<{
+    deposit_mode?: string;
+    base_deposit_percent?: number;
+    fixed_deposit_cents?: number | null;
+    pay_later_allowed?: boolean;
+    external_payments_enabled?: boolean;
+    accepted_methods?: string[];
+  } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -46,6 +54,14 @@ export default function DashboardOverviewPage() {
       const alertsPayload = await alertsRes.json();
       if (alertsRes.ok) setAlerts(alertsPayload.alerts || []);
       setAlertsLoading(false);
+
+      const paymentsRes = await fetch("/api/dashboard/payments", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      const paymentsPayload = await paymentsRes.json();
+      if (paymentsRes.ok) {
+        setPaymentsSummary(paymentsPayload.payments || null);
+      }
     })();
   }, [supabase]);
 
@@ -69,6 +85,37 @@ export default function DashboardOverviewPage() {
         <div className="mt-3">
           <QuickActions />
         </div>
+      </Card>
+
+      <Card>
+        <h2 className="font-display text-2xl">{tx("Opciones de pago activas", "Active payment options")}</h2>
+        {!paymentsSummary ? (
+          <p className="mt-3 text-sm text-coolSilver">{tx("Cargando opciones de pago...", "Loading payment options...")}</p>
+        ) : (
+          <div className="mt-3 space-y-2 text-sm text-coolSilver">
+            <p>
+              {tx("Modo de depósito", "Deposit mode")}: <span className="text-textWhite">{paymentsSummary.deposit_mode || "none"}</span>
+            </p>
+            <p>
+              {tx("Depósito base", "Base deposit")}: <span className="text-textWhite">{paymentsSummary.base_deposit_percent ?? 0}%</span>
+            </p>
+            <p>
+              {tx("Depósito fijo", "Fixed deposit")}: <span className="text-textWhite">${((paymentsSummary.fixed_deposit_cents || 0) / 100).toFixed(2)}</span>
+            </p>
+            <p>
+              {tx("Pagar después", "Pay later")}: <span className="text-textWhite">{paymentsSummary.pay_later_allowed ? tx("Sí", "Yes") : tx("No", "No")}</span>
+            </p>
+            <p>
+              {tx("Pagos externos", "External payments")}: <span className="text-textWhite">{paymentsSummary.external_payments_enabled ? tx("Sí", "Yes") : tx("No", "No")}</span>
+            </p>
+            <p>
+              {tx("Métodos aceptados", "Accepted methods")}:{" "}
+              <span className="text-textWhite">
+                {(paymentsSummary.accepted_methods || []).length ? paymentsSummary.accepted_methods?.join(", ") : tx("Sin métodos activos", "No active methods")}
+              </span>
+            </p>
+          </div>
+        )}
       </Card>
 
       <Card>

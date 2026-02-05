@@ -42,6 +42,7 @@ export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
+  const [timeZone, setTimeZone] = useState<string | null>(null);
   const [services, setServices] = useState<ServiceOption[]>([]);
   const [staff, setStaff] = useState<StaffOption[]>([]);
   const [creating, setCreating] = useState(false);
@@ -67,6 +68,7 @@ export default function AppointmentsPage() {
       setMessage(payload.error || tx("No se pudieron cargar citas.", "Could not load appointments."));
     } else {
       setAppointments(payload.appointments || []);
+      setTimeZone(payload.timezone || null);
     }
     setLoading(false);
   }
@@ -278,9 +280,13 @@ export default function AppointmentsPage() {
                     </div>
                   )}
                   <div>
-                  <p className="text-textWhite">
-                    {new Date(item.starts_at).toLocaleTimeString(locale === "en" ? "en-US" : "es-US", { hour: "2-digit", minute: "2-digit" })} · {item.services?.name || tx("Servicio", "Service")}
-                  </p>
+                    <p className="text-textWhite">
+                    {new Date(item.starts_at).toLocaleTimeString(locale === "en" ? "en-US" : "es-US", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      timeZone: timeZone || undefined
+                    })} · {item.services?.name || tx("Servicio", "Service")}
+                    </p>
                   <p className="text-mutedText">
                     {item.client_full_name || tx("Cliente", "Client")} · {item.client_email}
                   </p>

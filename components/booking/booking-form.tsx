@@ -37,7 +37,8 @@ export function BookingForm({
   cancelMinutes,
   lateToleranceMinutes,
   depositPercent,
-  bookingLeadDays
+  bookingLeadDays,
+  timeZone
 }: {
   businessId: string;
   services: ServiceItem[];
@@ -47,6 +48,7 @@ export function BookingForm({
   lateToleranceMinutes: number;
   depositPercent: number;
   bookingLeadDays?: number;
+  timeZone?: string;
 }) {
   const { t, tx } = useLocale();
   const supabase = useMemo(() => getClientSupabase(), []);
@@ -308,6 +310,11 @@ export function BookingForm({
       <Card>
         <h2 className="font-display text-2xl">3. {t("booking.dateTime")}</h2>
         <p className="mt-1 text-sm text-mutedText">{tx("Selecciona un horario disponible.", "Select an available time.")}</p>
+        {timeZone ? (
+          <p className="mt-1 text-xs text-coolSilver">
+            {tx("Horario del negocio", "Business time zone")}: {timeZone}
+          </p>
+        ) : null}
         {bookingLeadDays && bookingLeadDays > 0 ? (
           <p className="mt-1 text-xs text-coolSilver">
             {tx("Reservas disponibles con", "Bookings available with")} {bookingLeadDays} {tx("dias de anticipacion", "days of advance notice")}.
@@ -325,6 +332,7 @@ export function BookingForm({
                 setSelectedStartsAt(slot.startsAt);
                 if (slot.staffId) setSelectedStaffId(slot.staffId);
               }}
+              timeZone={timeZone}
             />
           )}
         </div>

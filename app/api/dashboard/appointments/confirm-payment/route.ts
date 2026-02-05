@@ -57,5 +57,11 @@ export async function POST(req: Request) {
     status: nextStatus
   });
 
+  await admin
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("business_id", ctx.businessId)
+    .eq("appointment_id", appt.id);
+
   return NextResponse.json({ ok: true, status: nextStatus });
 }

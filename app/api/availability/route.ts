@@ -1,4 +1,5 @@
 import { addDays, endOfDay, startOfDay } from "date-fns";
+import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -32,11 +33,22 @@ export async function POST(req: Request) {
     .select("booking_lead_days")
     .eq("business_id", parsed.data.businessId)
     .maybeSingle();
+  const { data: business } = await admin
+    .from("businesses")
+    .select("timezone")
+    .eq("id", parsed.data.businessId)
+    .maybeSingle();
+
+  const timeZone = business?.timezone || "UTC";
+  const zonedNow = toZonedTime(now, timeZone);
 
   const leadDays = policy?.booking_lead_days ?? 0;
-  const leadStart = leadDays > 0 ? startOfDay(addDays(now, leadDays)) : now;
-  const rangeStart = startOfDay(leadStart);
-  const rangeEnd = endOfDay(addDays(now, 30));
+  const leadStartZoned = leadDays > 0 ? startOfDay(addDays(zonedNow, leadDays)) : zonedNow;
+  const rangeStartZoned = startOfDay(leadStartZoned);
+  const rangeEndZoned = endOfDay(addDays(zonedNow, 30));
+  const rangeStart = fromZonedTime(rangeStartZoned, timeZone);
+  const rangeEnd = fromZonedTime(rangeEndZoned, timeZone);
+  const leadStartUtc = fromZonedTime(leadStartZoned, timeZone);
 
   let busyQuery = admin
     .from("appointments")
@@ -72,9 +84,9 @@ export async function POST(req: Request) {
   }));
 
   const slots = Array.from({ length: 31 }).flatMap((_, dayOffset) => {
-    const day = addDays(now, dayOffset);
-    if (day < rangeStart) return [];
-    const weekday = day.getDay();
+    const dayZoned = addDays(startOfDay(zonedNow), dayOffset);
+    if (dayZoned < rangeStartZoned) return [];
+    const weekday = dayZoned.getDay();
     const schedule = (schedules || []).find((item) => item.weekday === weekday);
 
     if (schedule?.is_closed) return [];
@@ -83,13 +95,16 @@ export async function POST(req: Request) {
     const endTime = schedule?.end_time || "18:00:00";
     const granularity = schedule?.slot_granularity_min || 15;
 
-    const dayStart = new Date(day);
+    const dayStartLocal = new Date(dayZoned);
     const [startH, startM] = startTime.split(":");
-    dayStart.setHours(Number(startH || 0), Number(startM || 0), 0, 0);
+    dayStartLocal.setHours(Number(startH || 0), Number(startM || 0), 0, 0);
 
-    const dayEnd = new Date(day);
+    const dayEndLocal = new Date(dayZoned);
     const [endH, endM] = endTime.split(":");
-    dayEnd.setHours(Number(endH || 0), Number(endM || 0), 0, 0);
+    dayEndLocal.setHours(Number(endH || 0), Number(endM || 0), 0, 0);
+
+    const dayStart = fromZonedTime(dayStartLocal, timeZone);
+    const dayEnd = fromZonedTime(dayEndLocal, timeZone);
 
     if (dayEnd <= dayStart) return [];
 
@@ -106,7 +121,7 @@ export async function POST(req: Request) {
       bufferAfterMin: parsed.data.bufferAfterMin,
       granularityMin: granularity,
       busy: combinedBusy
-    }).filter((slot) => new Date(slot.startsAt) >= leadStart);
+    }).filter((slot) => new Date(slot.startsAt) >= leadStartUtc);
   });
 
   return NextResponse.json({ slots });

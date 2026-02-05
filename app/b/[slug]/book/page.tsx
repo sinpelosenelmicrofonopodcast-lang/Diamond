@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { addDays, addHours, endOfDay, startOfDay } from "date-fns";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { BookingForm } from "@/components/booking/booking-form";
 import { Card } from "@/components/ui/card";
 import { ReviewSection } from "@/components/reviews/review-section";
@@ -43,6 +44,8 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
 
   const now = new Date();
   const bookingWindowEnd = addDays(now, 30);
+  const timeZone = business.timezone || "UTC";
+  const zonedNow = toZonedTime(now, timeZone);
   const leadDays = policies?.booking_lead_days ?? 0;
   const leadStart = leadDays > 0 ? startOfDay(addDays(now, leadDays)) : now;
   const primaryService = services[0];
@@ -57,8 +60,12 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
 
   if (primaryService && primaryStaff && process.env.SUPABASE_SERVICE_ROLE_KEY) {
     const admin = getAdminSupabase();
-    const rangeStart = startOfDay(leadStart);
-    const rangeEnd = endOfDay(addDays(now, 30));
+    const leadStartZoned = leadDays > 0 ? startOfDay(addDays(zonedNow, leadDays)) : zonedNow;
+    const rangeStartZoned = startOfDay(leadStartZoned);
+    const rangeEndZoned = endOfDay(addDays(zonedNow, 30));
+    const rangeStart = fromZonedTime(rangeStartZoned, timeZone);
+    const rangeEnd = fromZonedTime(rangeEndZoned, timeZone);
+    const leadStartUtc = fromZonedTime(leadStartZoned, timeZone);
 
     let busyQuery = admin
       .from("appointments")
@@ -95,9 +102,9 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
     }));
 
     const generated = Array.from({ length: 31 }).flatMap((_, dayOffset) => {
-      const day = addDays(now, dayOffset);
-      if (day < rangeStart) return [];
-      const weekday = day.getDay();
+      const dayZoned = addDays(startOfDay(zonedNow), dayOffset);
+      if (dayZoned < rangeStartZoned) return [];
+      const weekday = dayZoned.getDay();
       const schedule = (schedules || []).find((item) => item.weekday === weekday);
 
       if (schedule?.is_closed) return [];
@@ -105,8 +112,10 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
       const startTime = schedule?.start_time || "09:00:00";
       const endTime = schedule?.end_time || "18:00:00";
       const granularity = schedule?.slot_granularity_min || 15;
-      const dayStart = applyBusinessTime(startOfDay(day), startTime);
-      const dayEnd = applyBusinessTime(startOfDay(day), endTime);
+      const dayStartLocal = applyBusinessTime(startOfDay(dayZoned), startTime);
+      const dayEndLocal = applyBusinessTime(startOfDay(dayZoned), endTime);
+      const dayStart = fromZonedTime(dayStartLocal, timeZone);
+      const dayEnd = fromZonedTime(dayEndLocal, timeZone);
 
       if (dayEnd <= dayStart) return [];
       const dayBusy = busyRanges.filter((item) => item.startsAt >= dayStart && item.startsAt <= dayEnd);
@@ -122,7 +131,7 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
         bufferAfterMin: primaryService.buffer_after_min || 0,
         granularityMin: granularity,
         busy: combinedBusy
-      }).filter((slot) => new Date(slot.startsAt) >= leadStart);
+      }).filter((slot) => new Date(slot.startsAt) >= leadStartUtc);
     });
 
     slots = generated;
@@ -194,6 +203,7 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
         lateToleranceMinutes={policies?.late_tolerance_minutes ?? 10}
         depositPercent={policies?.base_deposit_percent ?? 0}
         bookingLeadDays={policies?.booking_lead_days ?? 0}
+        timeZone={business.timezone || "UTC"}
       />
 
       <Card>
