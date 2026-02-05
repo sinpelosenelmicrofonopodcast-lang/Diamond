@@ -73,7 +73,7 @@ export default function ProfilePage() {
         phone: form.phone,
         role: form.role,
         avatar_url: form.avatarUrl || null
-      },
+      } as any,
       { onConflict: "id" }
     );
 
