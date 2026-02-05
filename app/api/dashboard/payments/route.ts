@@ -35,7 +35,11 @@ export async function GET(req: Request) {
       .select("deposit_mode, base_deposit_percent, fixed_deposit_cents, pay_later_allowed, external_payments_enabled")
       .eq("business_id", ctx.businessId)
       .maybeSingle(),
-    admin.from("business_payment_methods").select("method").eq("business_id", ctx.businessId).eq("is_enabled", true)
+    admin
+      .from("business_payment_methods")
+      .select("method, account_label, account_value, payment_url, notes")
+      .eq("business_id", ctx.businessId)
+      .eq("is_enabled", true)
   ]);
 
   if (queryError) return NextResponse.json({ error: queryError.message }, { status: 400 });
