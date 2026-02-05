@@ -45,7 +45,7 @@ export async function POST(req: Request) {
 
   if (parsed.data.verifyEmail) {
     const { error: verifyError } = await admin.auth.admin.updateUserById(profile.id, {
-      email_confirmed_at: new Date().toISOString()
+      email_confirm: true
     });
     if (verifyError) return NextResponse.json({ error: verifyError.message }, { status: 400 });
     await logAdminAction({
