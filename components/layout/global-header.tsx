@@ -62,11 +62,13 @@ export function GlobalHeader() {
     window.location.href = "/";
   }
 
-  const panelHref = role === "owner" || role === "staff" || role === "admin" || user?.user_metadata?.account_type === "business"
-    ? "/dashboard/overview"
-    : "/client/appointments";
-  const canSeePricing = role === "owner" || role === "staff" || role === "admin" || user?.user_metadata?.account_type === "business";
   const isAdmin = role === "admin";
+  const panelHref = isAdmin
+    ? "/admin"
+    : role === "owner" || role === "staff" || user?.user_metadata?.account_type === "business"
+      ? "/dashboard/overview"
+      : "/client/appointments";
+  const canSeePricing = role === "owner" || role === "staff" || role === "admin" || user?.user_metadata?.account_type === "business";
 
   const displayName = user?.user_metadata?.full_name || user?.email || t("nav.profile");
   const initials = displayName

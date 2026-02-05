@@ -22,10 +22,11 @@ export async function getAdminContext(req: Request): Promise<{ ctx?: AdminContex
   const admin = getAdminSupabase();
   const { data: profile } = await admin
     .from("profiles")
-    .select("role, email")
+    .select("role, email, is_suspended")
     .eq("id", authData.user.id)
     .maybeSingle();
 
+  if (profile?.is_suspended) return { error: "Cuenta suspendida", status: 403 };
   if (profile?.role !== "admin") return { error: "No autorizado", status: 403 };
 
   return {

@@ -73,15 +73,23 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
       busyQuery = busyQuery.eq("staff_id", primaryStaff.id);
     }
 
-    const [{ data: busyRows }, { data: schedules }] = await Promise.all([
+    const [{ data: busyRows }, { data: schedules }, { data: blocks }] = await Promise.all([
       busyQuery,
       admin
         .from("business_schedules")
         .select("weekday, start_time, end_time, is_closed, slot_granularity_min")
+        .eq("business_id", business.id),
+      admin
+        .from("business_time_blocks")
+        .select("starts_at, ends_at")
         .eq("business_id", business.id)
     ]);
 
     const busyRanges = (busyRows || []).map((row) => ({
+      startsAt: new Date(row.starts_at),
+      endsAt: new Date(row.ends_at || row.starts_at)
+    }));
+    const blockRanges = (blocks || []).map((row) => ({
       startsAt: new Date(row.starts_at),
       endsAt: new Date(row.ends_at || row.starts_at)
     }));
@@ -102,6 +110,8 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
 
       if (dayEnd <= dayStart) return [];
       const dayBusy = busyRanges.filter((item) => item.startsAt >= dayStart && item.startsAt <= dayEnd);
+      const dayBlocks = blockRanges.filter((item) => item.startsAt <= dayEnd && item.endsAt >= dayStart);
+      const combinedBusy = [...dayBusy, ...dayBlocks];
 
       return generateSmartSlots({
         staffId: primaryStaff.id,
@@ -111,7 +121,7 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
         bufferBeforeMin: primaryService.buffer_before_min || 0,
         bufferAfterMin: primaryService.buffer_after_min || 0,
         granularityMin: granularity,
-        busy: dayBusy
+        busy: combinedBusy
       }).filter((slot) => new Date(slot.startsAt) >= leadStart);
     });
 

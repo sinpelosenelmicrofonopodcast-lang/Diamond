@@ -52,6 +52,12 @@ export default function BusinessSettingsPage() {
   const [instagramUrl, setInstagramUrl] = useState("");
   const [facebookUrl, setFacebookUrl] = useState("");
   const [tiktokUrl, setTiktokUrl] = useState("");
+  const [specials, setSpecials] = useState<Array<any>>([]);
+  const [specialTitle, setSpecialTitle] = useState("");
+  const [specialDescription, setSpecialDescription] = useState("");
+  const [specialDiscount, setSpecialDiscount] = useState("");
+  const [specialStarts, setSpecialStarts] = useState("");
+  const [specialEnds, setSpecialEnds] = useState("");
 
   useEffect(() => {
     async function loadBusiness() {
@@ -91,6 +97,12 @@ export default function BusinessSettingsPage() {
         setFacebookUrl(data.facebook_url || "");
         setTiktokUrl(data.tiktok_url || "");
       }
+
+      const specialsRes = await fetch("/api/dashboard/specials", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const specialsPayload = await specialsRes.json();
+      if (specialsRes.ok) setSpecials(specialsPayload.specials || []);
 
       setLoading(false);
     }
@@ -193,6 +205,60 @@ export default function BusinessSettingsPage() {
     setMessage(business ? tx("Datos del negocio actualizados.", "Business details updated.") : tx("Negocio creado. Ya puedes subir logo y banner.", "Business created. You can now upload logo and banner."));
   }
 
+  async function addSpecial(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) {
+      setMessage(tx("No hay sesión activa.", "No active session."));
+      return;
+    }
+    const res = await fetch("/api/dashboard/specials", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        title: specialTitle,
+        description: specialDescription || null,
+        discount_percent: specialDiscount ? Number(specialDiscount) : null,
+        starts_at: specialStarts ? new Date(specialStarts).toISOString() : null,
+        ends_at: specialEnds ? new Date(specialEnds).toISOString() : null,
+        is_active: true
+      })
+    });
+    const payload = await res.json();
+    if (!res.ok) {
+      setMessage(payload.error || tx("No se pudo guardar el especial.", "Could not save special."));
+      return;
+    }
+    setSpecialTitle("");
+    setSpecialDescription("");
+    setSpecialDiscount("");
+    setSpecialStarts("");
+    setSpecialEnds("");
+    const reload = await fetch("/api/dashboard/specials", { headers: { Authorization: `Bearer ${token}` } });
+    const reloadPayload = await reload.json();
+    if (reload.ok) setSpecials(reloadPayload.specials || []);
+  }
+
+  async function deleteSpecial(id: string) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) return;
+    const res = await fetch(`/api/dashboard/specials?id=${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const payload = await res.json();
+    if (!res.ok) {
+      setMessage(payload.error || tx("No se pudo eliminar el especial.", "Could not delete special."));
+      return;
+    }
+    setSpecials((prev) => prev.filter((item) => item.id !== id));
+  }
+
   return (
     <main className="space-y-4">
       <h1 className="font-display text-4xl">{tx("Perfil del negocio", "Business profile")}</h1>
@@ -276,6 +342,32 @@ export default function BusinessSettingsPage() {
             {coverUrl ? <img src={coverUrl} alt="Banner" className="h-28 w-full rounded-2xl border border-silver/20 object-cover" /> : null}
             <Input type="file" accept="image/*" onChange={(e) => handleFileChange(e, "cover")} disabled={!business} />
           </div>
+        </div>
+      </Card>
+
+      <Card>
+        <h2 className="font-display text-2xl">{tx("Especiales y descuentos", "Specials & discounts")}</h2>
+        <form className="mt-3 grid gap-2 md:grid-cols-[1fr_1fr_1fr]" onSubmit={addSpecial}>
+          <Input placeholder={tx("Título", "Title")} value={specialTitle} onChange={(e) => setSpecialTitle(e.target.value)} required />
+          <Input placeholder={tx("Descripción", "Description")} value={specialDescription} onChange={(e) => setSpecialDescription(e.target.value)} />
+          <Input placeholder={tx("Descuento %", "Discount %")} type="number" min={0} max={100} value={specialDiscount} onChange={(e) => setSpecialDiscount(e.target.value)} />
+          <Input type="datetime-local" value={specialStarts} onChange={(e) => setSpecialStarts(e.target.value)} />
+          <Input type="datetime-local" value={specialEnds} onChange={(e) => setSpecialEnds(e.target.value)} />
+          <Button type="submit">{tx("Agregar especial", "Add special")}</Button>
+        </form>
+        <div className="mt-3 space-y-2 text-sm text-coolSilver">
+          {specials.map((deal) => (
+            <div key={deal.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-silver/20 bg-black/40 p-3">
+              <div>
+                <p className="text-textWhite">{deal.title}</p>
+                {deal.description ? <p className="text-xs text-mutedText">{deal.description}</p> : null}
+                {typeof deal.discount_percent === "number" ? <p className="text-xs text-softGold">{deal.discount_percent}% OFF</p> : null}
+              </div>
+              <Button size="sm" variant="secondary" onClick={() => deleteSpecial(deal.id)}>
+                {tx("Eliminar", "Remove")}
+              </Button>
+            </div>
+          ))}
         </div>
       </Card>
 

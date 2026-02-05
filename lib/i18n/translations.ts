@@ -27,7 +27,11 @@ export const translations = {
       subtitle: "LuxApp conecta clientes con negocios de belleza y bienestar con reservas rápidas, depósitos inteligentes y protección anti no-show.",
       ctaSignup: "Crear cuenta gratis",
       ctaLogin: "Ya tengo cuenta",
-      featured: "Negocios recomendados"
+      featured: "Negocios recomendados",
+      deals: "Deals y especiales",
+      special: "Especial",
+      noDeals: "No hay especiales activos ahora.",
+      viewBusiness: "Ver negocio"
     },
     booking: {
       service: "Servicio",
@@ -97,7 +101,11 @@ export const translations = {
       subtitle: "LuxApp connects clients with beauty and wellness businesses through fast booking, smart deposits, and no-show protection.",
       ctaSignup: "Create free account",
       ctaLogin: "I already have an account",
-      featured: "Featured businesses"
+      featured: "Featured businesses",
+      deals: "Deals & specials",
+      special: "Special",
+      noDeals: "No active specials right now.",
+      viewBusiness: "View business"
     },
     booking: {
       service: "Service",

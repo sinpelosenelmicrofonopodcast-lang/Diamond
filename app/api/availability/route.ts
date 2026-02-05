@@ -50,15 +50,23 @@ export async function POST(req: Request) {
     busyQuery = busyQuery.eq("staff_id", parsed.data.staffId);
   }
 
-  const [{ data: busyRows }, { data: schedules }] = await Promise.all([
+  const [{ data: busyRows }, { data: schedules }, { data: blocks }] = await Promise.all([
     busyQuery,
     admin
       .from("business_schedules")
       .select("weekday, start_time, end_time, is_closed, slot_granularity_min")
+      .eq("business_id", parsed.data.businessId),
+    admin
+      .from("business_time_blocks")
+      .select("starts_at, ends_at")
       .eq("business_id", parsed.data.businessId)
   ]);
 
   const busyRanges = (busyRows || []).map((row) => ({
+    startsAt: new Date(row.starts_at),
+    endsAt: new Date(row.ends_at || row.starts_at)
+  }));
+  const blockRanges = (blocks || []).map((row) => ({
     startsAt: new Date(row.starts_at),
     endsAt: new Date(row.ends_at || row.starts_at)
   }));
@@ -86,6 +94,8 @@ export async function POST(req: Request) {
     if (dayEnd <= dayStart) return [];
 
     const dayBusy = busyRanges.filter((item) => item.startsAt >= dayStart && item.startsAt <= dayEnd);
+    const dayBlocks = blockRanges.filter((item) => item.startsAt <= dayEnd && item.endsAt >= dayStart);
+    const combinedBusy = [...dayBusy, ...dayBlocks];
 
     return generateSmartSlots({
       staffId: parsed.data.staffId,
@@ -95,7 +105,7 @@ export async function POST(req: Request) {
       bufferBeforeMin: parsed.data.bufferBeforeMin,
       bufferAfterMin: parsed.data.bufferAfterMin,
       granularityMin: granularity,
-      busy: dayBusy
+      busy: combinedBusy
     }).filter((slot) => new Date(slot.startsAt) >= leadStart);
   });
 

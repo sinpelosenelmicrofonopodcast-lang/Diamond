@@ -44,7 +44,7 @@ export async function getBusinessBySlug(slug: string) {
       return { business: null, services: [], staff: [], policies: null };
     }
 
-    const [{ data: services }, { data: staff }, { data: policies }, { data: paymentMethods }, { data: ownerProfile }, { data: reviews }] = await Promise.all([
+    const [{ data: services }, { data: staff }, { data: policies }, { data: paymentMethods }, { data: ownerProfile }, { data: reviews }, { data: specials }] = await Promise.all([
       supabase
         .from("services")
         .select("id, name, description, duration_min, buffer_before_min, buffer_after_min, price_cents, price_starts_at, image_url, requires_confirmation, requires_payment, is_active, sort_order")
@@ -65,7 +65,13 @@ export async function getBusinessBySlug(slug: string) {
         .eq("business_id", business.id)
         .eq("is_published", true)
         .order("created_at", { ascending: false })
-        .limit(8)
+        .limit(8),
+      supabase
+        .from("business_specials")
+        .select("id, title, description, discount_percent, starts_at, ends_at")
+        .eq("business_id", business.id)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
     ]);
 
     const normalizedStaff =
@@ -91,8 +97,8 @@ export async function getBusinessBySlug(slug: string) {
               }
             ];
 
-    return { business, services: services || [], staff: normalizedStaff, policies, paymentMethods: paymentMethods || [], reviews: reviews || [] };
+    return { business, services: services || [], staff: normalizedStaff, policies, paymentMethods: paymentMethods || [], reviews: reviews || [], specials: specials || [] };
   } catch {
-    return { business: null, services: [], staff: [], policies: null, paymentMethods: [], reviews: [] };
+    return { business: null, services: [], staff: [], policies: null, paymentMethods: [], reviews: [], specials: [] };
   }
 }

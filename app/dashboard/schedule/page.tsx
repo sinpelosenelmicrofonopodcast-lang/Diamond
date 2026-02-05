@@ -35,6 +35,10 @@ export default function SchedulePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [blocks, setBlocks] = useState<Array<{ id: string; starts_at: string; ends_at: string; reason?: string | null }>>([]);
+  const [blockStart, setBlockStart] = useState("");
+  const [blockEnd, setBlockEnd] = useState("");
+  const [blockReason, setBlockReason] = useState("");
 
   async function authHeaders() {
     const { data } = await supabase.auth.getSession();
@@ -55,6 +59,9 @@ export default function SchedulePage() {
         setMessage(payload.error || tx("No se pudo cargar horario.", "Could not load schedule."));
       }
 
+      const blocksRes = await fetch("/api/dashboard/time-blocks", { headers: await authHeaders() });
+      const blocksPayload = await blocksRes.json();
+      if (blocksRes.ok) setBlocks(blocksPayload.blocks || []);
       setLoading(false);
     }
 
@@ -84,6 +91,47 @@ export default function SchedulePage() {
 
     setMessage(tx("Horario actualizado.", "Schedule updated."));
     setSaving(false);
+  }
+
+  async function addBlock(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setMessage(null);
+    const res = await fetch("/api/dashboard/time-blocks", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(await authHeaders())
+      },
+      body: JSON.stringify({
+        starts_at: new Date(blockStart).toISOString(),
+        ends_at: new Date(blockEnd).toISOString(),
+        reason: blockReason || null
+      })
+    });
+    const payload = await res.json();
+    if (!res.ok) {
+      setMessage(payload.error || tx("No se pudo bloquear.", "Could not block time."));
+      return;
+    }
+    setBlockStart("");
+    setBlockEnd("");
+    setBlockReason("");
+    const blocksRes = await fetch("/api/dashboard/time-blocks", { headers: await authHeaders() });
+    const blocksPayload = await blocksRes.json();
+    if (blocksRes.ok) setBlocks(blocksPayload.blocks || []);
+  }
+
+  async function removeBlock(id: string) {
+    const res = await fetch(`/api/dashboard/time-blocks?id=${id}`, {
+      method: "DELETE",
+      headers: await authHeaders()
+    });
+    const payload = await res.json();
+    if (!res.ok) {
+      setMessage(payload.error || tx("No se pudo eliminar bloqueo.", "Could not delete block."));
+      return;
+    }
+    setBlocks((prev) => prev.filter((item) => item.id !== id));
   }
 
   return (
@@ -146,6 +194,49 @@ export default function SchedulePage() {
           </form>
         )}
         {message ? <p className="mt-3 text-sm text-coolSilver">{message}</p> : null}
+      </Card>
+
+      <Card>
+        <h2 className="font-display text-2xl">{tx("Bloquear horarios específicos", "Block specific hours")}</h2>
+        <p className="mt-1 text-sm text-mutedText">{tx("Bloquea rangos de tiempo para días concretos (ej: viernes 3pm).", "Block time ranges for specific days (e.g., Friday 3pm).")}</p>
+        <form className="mt-3 grid gap-2 md:grid-cols-[1fr_1fr_1fr_auto]" onSubmit={addBlock}>
+          <input
+            className="h-11 w-full rounded-xl border border-silver/20 bg-richBlack/80 px-3 text-textWhite"
+            type="datetime-local"
+            value={blockStart}
+            onChange={(e) => setBlockStart(e.target.value)}
+            required
+          />
+          <input
+            className="h-11 w-full rounded-xl border border-silver/20 bg-richBlack/80 px-3 text-textWhite"
+            type="datetime-local"
+            value={blockEnd}
+            onChange={(e) => setBlockEnd(e.target.value)}
+            required
+          />
+          <input
+            className="h-11 w-full rounded-xl border border-silver/20 bg-richBlack/80 px-3 text-textWhite"
+            placeholder={tx("Razón (opcional)", "Reason (optional)")}
+            value={blockReason}
+            onChange={(e) => setBlockReason(e.target.value)}
+          />
+          <Button type="submit">{tx("Bloquear", "Block")}</Button>
+        </form>
+        <div className="mt-3 space-y-2 text-sm text-coolSilver">
+          {blocks.map((block) => (
+            <div key={block.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-silver/20 bg-black/40 p-3">
+              <span>
+                {new Date(block.starts_at).toLocaleString(locale === "en" ? "en-US" : "es-US")} → {new Date(block.ends_at).toLocaleString(locale === "en" ? "en-US" : "es-US")}
+              </span>
+              <div className="flex items-center gap-2">
+                {block.reason ? <span className="text-xs text-mutedText">{block.reason}</span> : null}
+                <Button size="sm" variant="secondary" onClick={() => removeBlock(block.id)}>
+                  {tx("Eliminar", "Remove")}
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
       </Card>
     </>
   );

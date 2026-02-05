@@ -21,10 +21,18 @@ export async function GET(req: Request) {
     : { data: [] as any[] };
 
   const ownerMap = new Map((owners || []).map((o: any) => [o.id, o]));
+  const { data: subs } = await admin
+    .from("business_subscriptions")
+    .select("business_id, plan, interval, status");
+  const subsMap = new Map((subs || []).map((s: any) => [s.business_id, s]));
+
   const result = (businesses || []).map((b: any) => ({
     ...b,
     owner_email: ownerMap.get(b.owner_id)?.email || null,
-    owner_name: ownerMap.get(b.owner_id)?.full_name || null
+    owner_name: ownerMap.get(b.owner_id)?.full_name || null,
+    plan: subsMap.get(b.id)?.plan || "free",
+    interval: subsMap.get(b.id)?.interval || null,
+    subscription_status: subsMap.get(b.id)?.status || null
   }));
 
   return NextResponse.json({ businesses: result });

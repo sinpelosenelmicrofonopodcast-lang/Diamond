@@ -13,7 +13,7 @@ import { getServerLocale } from "@/lib/i18n/server";
 
 export default async function BusinessPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const { business, services, staff, policies, reviews } = await getBusinessBySlug(slug);
+  const { business, services, staff, policies, reviews, specials } = await getBusinessBySlug(slug);
   const locale = await getServerLocale();
   const tx = (es: string, en: string) => (locale === "en" ? en : es);
   const bookingWindowEnd = addDays(new Date(), 30);
@@ -131,6 +131,23 @@ export default async function BusinessPage({ params }: { params: Promise<{ slug:
           </div>
         </Card>
       </section>
+
+      {specials && specials.length ? (
+        <Card>
+          <h2 className="font-display text-2xl">{tx("Especiales", "Specials")}</h2>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            {specials.map((deal: any) => (
+              <div key={deal.id} className="rounded-2xl border border-silver/20 bg-black/40 p-3">
+                <p className="text-softGold">{deal.title}</p>
+                {deal.description ? <p className="mt-1 text-sm text-coolSilver">{deal.description}</p> : null}
+                {typeof deal.discount_percent === "number" ? (
+                  <p className="mt-2 text-xs text-mutedText">{deal.discount_percent}% OFF</p>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </Card>
+      ) : null}
 
       <Card>
         <h2 className="font-display text-2xl">{tx("Profesionales", "Professionals")}</h2>

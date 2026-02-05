@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { getAdminSupabase } from "@/lib/supabase/admin";
 import { getAdminContext } from "@/lib/server/admin-auth";
+import { logAdminAction } from "@/lib/server/admin-audit";
 
 const schema = z.object({
   businessId: z.string().uuid(),
@@ -44,6 +45,14 @@ export async function POST(req: Request) {
   );
 
   await admin.from("profiles").update({ role: "owner" }).eq("id", newOwner.id);
+
+  await logAdminAction({
+    adminId: ctx.userId,
+    action: "transfer_business",
+    targetType: "business",
+    targetId: parsed.data.businessId,
+    details: { new_owner_email: parsed.data.newOwnerEmail }
+  });
 
   return NextResponse.json({ ok: true, businessId: parsed.data.businessId, newOwnerId: newOwner.id });
 }
