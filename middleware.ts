@@ -12,7 +12,10 @@ export function middleware(req: NextRequest) {
   const isProtected = protectedRoutes.some((route) => path.startsWith(route));
   if (!isProtected) return NextResponse.next();
 
-  const hasAuthCookie = req.cookies.get("sb-access-token") || req.cookies.get("supabase-auth-token");
+  const hasAuthCookie =
+    Boolean(req.cookies.get("sb-access-token")) ||
+    Boolean(req.cookies.get("supabase-auth-token")) ||
+    req.cookies.getAll().some((cookie) => cookie.name.startsWith("sb-") && cookie.name.endsWith("-auth-token"));
 
   if (!hasAuthCookie) {
     const signInUrl = new URL("/auth/signin", req.url);
