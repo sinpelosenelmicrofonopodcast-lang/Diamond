@@ -99,9 +99,9 @@ export default async function BusinessPage({ params }: { params: Promise<{ slug:
               services.reduce((acc: Record<string, typeof services>, service) => {
                 const key = service.category || tx("Sin categoría", "Uncategorized");
                 if (!acc[key]) acc[key] = [];
-                acc[key].push(service);
+                acc[key] = [...acc[key], service];
                 return acc;
-              }, {})
+              }, {} as Record<string, typeof services>)
             ).map(([category, items]) => (
               <details key={category} className="rounded-2xl border border-silver/20 bg-black/40 p-3" open>
                 <summary className="cursor-pointer text-softGold">
