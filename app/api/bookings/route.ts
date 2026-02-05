@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getRequiredDepositPercent } from "@/lib/booking/risk";
 import { sendAppointmentStatusEmail } from "@/lib/notifications/email";
 import { createBusinessNotification } from "@/lib/notifications/in-app";
+import { createBusinessNotification } from "@/lib/notifications/in-app";
 import { getAdminSupabase } from "@/lib/supabase/admin";
 
 const schema = z.object({
@@ -123,6 +124,17 @@ export async function POST(req: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await createBusinessNotification({
+    businessId: parsed.data.businessId,
+    appointmentId: data.id,
+    kind: "appointment_new",
+    payload: {
+      title: "Nueva cita",
+      body: `Nueva solicitud de ${safeEmail}.`,
+      status
+    }
+  });
 
   await supabase.from("appointment_services").insert(
     services.map((service, index) => ({

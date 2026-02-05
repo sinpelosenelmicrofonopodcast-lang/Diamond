@@ -14,6 +14,9 @@ type Appointment = {
   starts_at: string;
   status: string;
   client_email: string;
+  client_full_name?: string | null;
+  client_phone?: string | null;
+  client_avatar_url?: string | null;
   required_deposit_percent: number;
   required_deposit_cents?: number | null;
   total_price_cents?: number | null;
@@ -255,11 +258,37 @@ export default function AppointmentsPage() {
           {appointments.map((item) => (
             <div key={item.id} className="rounded-xl border border-silver/20 bg-black/40 p-3 text-sm">
               <div className="flex items-center justify-between gap-2">
-                <div>
+                <div className="flex items-start gap-3">
+                  {item.client_avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={item.client_avatar_url}
+                      alt={item.client_full_name || "Cliente"}
+                      className="h-10 w-10 rounded-xl object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-silver/20 text-xs text-coolSilver">
+                      {item.client_full_name
+                        ? item.client_full_name
+                            .split(" ")
+                            .map((chunk) => chunk[0])
+                            .join("")
+                            .slice(0, 2)
+                        : "NA"}
+                    </div>
+                  )}
+                  <div>
                   <p className="text-textWhite">
                     {new Date(item.starts_at).toLocaleTimeString(locale === "en" ? "en-US" : "es-US", { hour: "2-digit", minute: "2-digit" })} · {item.services?.name || tx("Servicio", "Service")}
                   </p>
-                  <p className="text-mutedText">{item.client_email} · {tx("Staff", "Staff")}: {item.staff_profiles?.display_name || tx("Sin asignar", "Unassigned")}</p>
+                  <p className="text-mutedText">
+                    {item.client_full_name || tx("Cliente", "Client")} · {item.client_email}
+                  </p>
+                  <p className="text-mutedText">
+                    {item.client_phone ? `${item.client_phone} · ` : ""}
+                    {tx("Staff", "Staff")}: {item.staff_profiles?.display_name || tx("Sin asignar", "Unassigned")}
+                  </p>
+                  </div>
                 </div>
                 <Badge>{item.status}</Badge>
               </div>
