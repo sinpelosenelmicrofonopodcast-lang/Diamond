@@ -1,6 +1,10 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY || "");
+function getResend() {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return null;
+  return new Resend(key);
+}
 
 interface AppointmentEmailInput {
   to: string;
@@ -11,6 +15,8 @@ interface AppointmentEmailInput {
 }
 
 export async function sendAppointmentStatusEmail(input: AppointmentEmailInput) {
+  const resend = getResend();
+  if (!resend) return { id: "skipped", error: "Missing RESEND_API_KEY" };
   return resend.emails.send({
     from: "LuxApp <bookings@luxapp.io>",
     to: input.to,
@@ -27,6 +33,8 @@ export async function sendAppointmentStatusEmail(input: AppointmentEmailInput) {
 }
 
 export async function sendReminderEmail(input: AppointmentEmailInput, hoursBefore: 24 | 2) {
+  const resend = getResend();
+  if (!resend) return { id: "skipped", error: "Missing RESEND_API_KEY" };
   return resend.emails.send({
     from: "LuxApp Reminders <reminders@luxapp.io>",
     to: input.to,
