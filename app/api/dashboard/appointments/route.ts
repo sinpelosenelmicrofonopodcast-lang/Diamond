@@ -33,8 +33,12 @@ export async function GET(req: Request) {
   const mode = url.searchParams.get("mode") || "today";
 
   const now = new Date();
-  const rangeStart = mode === "week" ? startOfDay(now) : startOfDay(now);
-  const rangeEnd = mode === "week" ? endOfDay(addDays(now, 6)) : endOfDay(now);
+  const rangeStart = mode === "week" || mode === "upcoming" ? startOfDay(now) : startOfDay(now);
+  const rangeEnd = mode === "week"
+    ? endOfDay(addDays(now, 6))
+    : mode === "upcoming"
+      ? endOfDay(addDays(now, 30))
+      : endOfDay(now);
 
   const admin = getAdminSupabase();
   const { data, error: queryError } = await admin

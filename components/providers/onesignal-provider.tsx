@@ -20,20 +20,6 @@ export function OneSignalProvider() {
 
     const OneSignal = window.OneSignal;
 
-    if (!window.__onesignalInitialized) {
-      OneSignal.init({
-        appId,
-        allowLocalhostAsSecureOrigin: true
-      });
-      window.__onesignalInitialized = true;
-    }
-
-    OneSignal.isPushNotificationsEnabled?.().then((enabled: boolean) => {
-      if (!enabled && OneSignal.showSlidedownPrompt) {
-        OneSignal.showSlidedownPrompt();
-      }
-    });
-
     const applyUser = (userId?: string | null) => {
       if (!userId) return;
       if (typeof OneSignal.login === "function") {
@@ -43,10 +29,32 @@ export function OneSignalProvider() {
       }
     };
 
-    supabase.auth.getSession().then(({ data }) => applyUser(data.session?.user?.id));
+    const initPromise = window.__onesignalInitialized
+      ? Promise.resolve()
+      : OneSignal.init({
+          appId,
+          allowLocalhostAsSecureOrigin: true
+        }).then(() => {
+          window.__onesignalInitialized = true;
+        });
+
+    initPromise
+      .then(() => OneSignal.isPushNotificationsEnabled?.())
+      .then((enabled: boolean) => {
+        if (!enabled && OneSignal.showSlidedownPrompt) {
+          OneSignal.showSlidedownPrompt();
+        }
+      })
+      .catch(() => {
+        // ignore
+      });
+
+    supabase.auth.getSession().then(({ data }) => {
+      initPromise.then(() => applyUser(data.session?.user?.id));
+    });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      applyUser(session?.user?.id);
+      initPromise.then(() => applyUser(session?.user?.id));
     });
 
     return () => {

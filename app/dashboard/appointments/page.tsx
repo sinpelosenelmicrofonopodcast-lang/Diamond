@@ -61,7 +61,7 @@ export default function AppointmentsPage() {
   }
 
   async function loadAppointments() {
-    const res = await fetch("/api/dashboard/appointments?mode=today", { headers: await authHeaders() });
+    const res = await fetch("/api/dashboard/appointments?mode=upcoming", { headers: await authHeaders() });
     const payload = await res.json();
     if (!res.ok) {
       setMessage(payload.error || tx("No se pudieron cargar citas.", "Could not load appointments."));
