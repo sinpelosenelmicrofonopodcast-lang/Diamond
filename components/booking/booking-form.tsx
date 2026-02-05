@@ -59,6 +59,9 @@ export function BookingForm({
   const [selectedStartsAt, setSelectedStartsAt] = useState<string>("");
   const [slotOptions, setSlotOptions] = useState<SlotOption[]>(slots);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [estimating, setEstimating] = useState(false);
+  const [requiredDepositPercent, setRequiredDepositPercent] = useState(depositPercent);
+  const [requiredDepositCents, setRequiredDepositCents] = useState(0);
   const [profileName, setProfileName] = useState("");
   const [profilePhone, setProfilePhone] = useState("");
   const [profileEmail, setProfileEmail] = useState("");
@@ -99,7 +102,7 @@ export function BookingForm({
   const multiplier = guestCount === 1 ? 2 : 1;
   const totalPriceCents = basePriceCents * multiplier;
   const totalDurationMin = baseDurationMin * multiplier;
-  const depositCents = Math.round(totalPriceCents * (depositPercent / 100));
+  const depositCents = requiredDepositCents || Math.round(totalPriceCents * (requiredDepositPercent / 100));
 
   function toggleService(serviceId: string) {
     setSelectedSlotKey(null);
@@ -135,6 +138,45 @@ export function BookingForm({
       setProfileReady(true);
     })();
   }, [supabase]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function estimateDeposit() {
+      if (!selectedServices.length) return;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) return;
+      setEstimating(true);
+      try {
+        const res = await fetch("/api/bookings/estimate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            businessId,
+            serviceIds: selectedServices.map((item) => item.id),
+            guestCount,
+            businessDepositPercent: depositPercent,
+            clientEmail: profileEmail || undefined
+          })
+        });
+        const payload = await res.json();
+        if (!cancelled && res.ok) {
+          setRequiredDepositPercent(payload.requiredDepositPercent ?? depositPercent);
+          setRequiredDepositCents(payload.requiredDepositCents ?? 0);
+        }
+      } finally {
+        if (!cancelled) setEstimating(false);
+      }
+    }
+
+    estimateDeposit();
+    return () => {
+      cancelled = true;
+    };
+  }, [businessId, selectedServiceIds.join(","), guestCount, depositPercent, profileEmail, supabase]);
 
   useEffect(() => {
     let cancelled = false;
@@ -260,6 +302,11 @@ export function BookingForm({
                     <span className="text-xs text-mutedText">
                       {service.duration_min} min · {service.price_starts_at ? `${tx("Desde", "From")} $${(service.price_cents / 100).toFixed(2)}` : `$${(service.price_cents / 100).toFixed(2)}`}
                     </span>
+                    {requiredDepositPercent > 0 ? (
+                      <span className="mt-1 block text-[11px] text-softGold">
+                        {tx("Requiere depósito", "Requires deposit")}: {requiredDepositPercent}%
+                      </span>
+                    ) : null}
                   </span>
                 </span>
                 <span className="text-xs text-softGold">
@@ -278,7 +325,7 @@ export function BookingForm({
               {tx("Precio total", "Total price")}: {hasVariablePrice ? `${tx("Desde", "From")} ` : ""}${(totalPriceCents / 100).toFixed(2)}
             </p>
             <p>
-              {tx("Depósito estimado", "Estimated deposit")}: ${(depositCents / 100).toFixed(2)}
+              {tx("Depósito estimado", "Estimated deposit")}: ${(depositCents / 100).toFixed(2)} {estimating ? `(${tx("calculando", "calculating")}...)` : ""}
             </p>
             <label className="mt-2 flex items-center gap-2">
               <input type="checkbox" checked={guestCount === 1} onChange={(e) => setGuestCount(e.target.checked ? 1 : 0)} />
@@ -355,7 +402,7 @@ export function BookingForm({
       <PolicyNotice
         cancellationMinutes={cancelMinutes}
         lateToleranceMinutes={lateToleranceMinutes}
-        depositPercent={depositPercent}
+        depositPercent={requiredDepositPercent}
         bookingLeadDays={bookingLeadDays}
       />
 
