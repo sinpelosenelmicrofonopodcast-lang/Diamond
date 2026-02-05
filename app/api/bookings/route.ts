@@ -52,11 +52,6 @@ export async function POST(req: Request) {
     .maybeSingle();
 
   const globalRiskScore = stats?.risk_score ?? 0;
-  const requiredDepositPercent = getRequiredDepositPercent({
-    businessDepositPercent: parsed.data.businessDepositPercent,
-    globalRiskScore,
-    hasGlobalSoftBlacklist: false
-  });
 
   const { data: services, error: serviceError } = await supabase
     .from("services")
@@ -72,7 +67,7 @@ export async function POST(req: Request) {
 
   const { data: policy } = await supabase
     .from("business_policies")
-    .select("auto_confirm, booking_lead_days")
+    .select("auto_confirm, booking_lead_days, deposit_mode, base_deposit_percent, fixed_deposit_cents")
     .eq("business_id", parsed.data.businessId)
     .maybeSingle();
 
@@ -88,14 +83,35 @@ export async function POST(req: Request) {
   const totalDurationMin = baseDuration * (parsed.data.guestCount === 1 ? 2 : 1);
   const requiresConfirmation = services.some((item) => item.requires_confirmation);
 
-  const requiredDepositCents = Math.round(totalPriceCents * (requiredDepositPercent / 100));
+  const depositMode = policy?.deposit_mode || "none";
+  const basePercent = policy?.base_deposit_percent ?? parsed.data.businessDepositPercent;
+  const fixedDepositCents = policy?.fixed_deposit_cents ?? null;
+
+  let requiredDepositPercent = 0;
+  let requiredDepositCents = 0;
+
+  if (depositMode === "fixed" && fixedDepositCents && fixedDepositCents > 0) {
+    requiredDepositCents = fixedDepositCents;
+  } else if (depositMode === "full") {
+    requiredDepositPercent = 100;
+    requiredDepositCents = totalPriceCents;
+  } else if (depositMode === "percent") {
+    requiredDepositPercent = getRequiredDepositPercent({
+      businessDepositPercent: basePercent,
+      globalRiskScore,
+      hasGlobalSoftBlacklist: false
+    });
+    requiredDepositCents = Math.round(totalPriceCents * (requiredDepositPercent / 100));
+  }
+
   const endsAt = new Date(parsed.data.startsAt);
   endsAt.setMinutes(endsAt.getMinutes() + totalDurationMin);
 
   const autoConfirm = policy?.auto_confirm ?? false;
+  const requiresPayment = requiredDepositCents > 0;
   const status = !autoConfirm || requiresConfirmation
     ? "pending_confirmation"
-    : requiredDepositPercent > 0
+    : requiresPayment
       ? "awaiting_payment"
       : "confirmed";
 

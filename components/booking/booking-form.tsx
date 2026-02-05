@@ -62,6 +62,8 @@ export function BookingForm({
   const [estimating, setEstimating] = useState(false);
   const [requiredDepositPercent, setRequiredDepositPercent] = useState(depositPercent);
   const [requiredDepositCents, setRequiredDepositCents] = useState(0);
+  const [depositMode, setDepositMode] = useState<"none" | "fixed" | "percent" | "full">("none");
+  const [fixedDepositCents, setFixedDepositCents] = useState<number | null>(null);
   const [profileName, setProfileName] = useState("");
   const [profilePhone, setProfilePhone] = useState("");
   const [profileEmail, setProfileEmail] = useState("");
@@ -166,6 +168,8 @@ export function BookingForm({
         if (!cancelled && res.ok) {
           setRequiredDepositPercent(payload.requiredDepositPercent ?? depositPercent);
           setRequiredDepositCents(payload.requiredDepositCents ?? 0);
+          setDepositMode(payload.deposit_mode || "none");
+          setFixedDepositCents(payload.fixed_deposit_cents ?? null);
         }
       } finally {
         if (!cancelled) setEstimating(false);
@@ -302,7 +306,15 @@ export function BookingForm({
                     <span className="text-xs text-mutedText">
                       {service.duration_min} min · {service.price_starts_at ? `${tx("Desde", "From")} $${(service.price_cents / 100).toFixed(2)}` : `$${(service.price_cents / 100).toFixed(2)}`}
                     </span>
-                    {requiredDepositPercent > 0 ? (
+                    {depositMode === "fixed" && fixedDepositCents ? (
+                      <span className="mt-1 block text-[11px] text-softGold">
+                        {tx("Depósito fijo", "Fixed deposit")}: ${(fixedDepositCents / 100).toFixed(2)}
+                      </span>
+                    ) : depositMode === "full" ? (
+                      <span className="mt-1 block text-[11px] text-softGold">
+                        {tx("Pago completo requerido", "Full payment required")}
+                      </span>
+                    ) : requiredDepositPercent > 0 ? (
                       <span className="mt-1 block text-[11px] text-softGold">
                         {tx("Requiere depósito", "Requires deposit")}: {requiredDepositPercent}%
                       </span>
@@ -327,6 +339,11 @@ export function BookingForm({
             <p>
               {tx("Depósito estimado", "Estimated deposit")}: ${(depositCents / 100).toFixed(2)} {estimating ? `(${tx("calculando", "calculating")}...)` : ""}
             </p>
+            {depositMode === "fixed" ? (
+              <p className="text-xs text-mutedText">
+                {tx("Se cobra el depósito fijo sin importar los servicios.", "Fixed deposit is charged regardless of services.")}
+              </p>
+            ) : null}
             <label className="mt-2 flex items-center gap-2">
               <input type="checkbox" checked={guestCount === 1} onChange={(e) => setGuestCount(e.target.checked ? 1 : 0)} />
               {tx("Agregar 1 guest (misma selección de servicios)", "Add 1 guest (same service selection)")}
@@ -404,6 +421,8 @@ export function BookingForm({
         lateToleranceMinutes={lateToleranceMinutes}
         depositPercent={requiredDepositPercent}
         bookingLeadDays={bookingLeadDays}
+        depositMode={depositMode}
+        fixedDepositCents={fixedDepositCents}
       />
 
       <Button className="w-full" size="lg" onClick={onConfirm} disabled={loading || !profileReady || !services.length || !slotOptions.length}>

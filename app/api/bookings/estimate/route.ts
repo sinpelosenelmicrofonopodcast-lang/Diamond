@@ -42,12 +42,16 @@ export async function POST(req: Request) {
     .eq("email", safeEmail)
     .maybeSingle();
 
+  const { data: policy } = await admin
+    .from("business_policies")
+    .select("deposit_mode, base_deposit_percent, fixed_deposit_cents")
+    .eq("business_id", parsed.data.businessId)
+    .maybeSingle();
+
   const globalRiskScore = stats?.risk_score ?? 0;
-  const requiredDepositPercent = getRequiredDepositPercent({
-    businessDepositPercent: parsed.data.businessDepositPercent,
-    globalRiskScore,
-    hasGlobalSoftBlacklist: false
-  });
+  const depositMode = policy?.deposit_mode || "none";
+  const basePercent = policy?.base_deposit_percent ?? parsed.data.businessDepositPercent;
+  const fixedDepositCents = policy?.fixed_deposit_cents ?? null;
 
   const { data: services, error: serviceError } = await admin
     .from("services")
@@ -62,11 +66,29 @@ export async function POST(req: Request) {
 
   const basePrice = services.reduce((acc, item) => acc + (item.price_cents || 0), 0);
   const totalPriceCents = basePrice * (parsed.data.guestCount === 1 ? 2 : 1);
-  const requiredDepositCents = Math.round(totalPriceCents * (requiredDepositPercent / 100));
+
+  let requiredDepositPercent = 0;
+  let requiredDepositCents = 0;
+
+  if (depositMode === "fixed" && fixedDepositCents && fixedDepositCents > 0) {
+    requiredDepositCents = fixedDepositCents;
+  } else if (depositMode === "full") {
+    requiredDepositPercent = 100;
+    requiredDepositCents = totalPriceCents;
+  } else if (depositMode === "percent") {
+    requiredDepositPercent = getRequiredDepositPercent({
+      businessDepositPercent: basePercent,
+      globalRiskScore,
+      hasGlobalSoftBlacklist: false
+    });
+    requiredDepositCents = Math.round(totalPriceCents * (requiredDepositPercent / 100));
+  }
 
   return NextResponse.json({
     requiredDepositPercent,
     requiredDepositCents,
-    totalPriceCents
+    totalPriceCents,
+    deposit_mode: depositMode,
+    fixed_deposit_cents: fixedDepositCents
   });
 }
