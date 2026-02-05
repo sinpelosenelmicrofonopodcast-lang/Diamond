@@ -109,7 +109,7 @@ export default function ProfilePage() {
 
       const { error } = await supabase
         .from("profiles")
-        .update({ avatar_url: data.publicUrl })
+        .update({ avatar_url: data.publicUrl } as any)
         .eq("id", userId);
 
       if (error) {
