@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/providers/locale-provider";
 import { getClientSupabase } from "@/lib/supabase/client";
 
@@ -37,6 +38,8 @@ export default function DashboardOverviewPage() {
     external_payments_enabled?: boolean;
     accepted_methods?: string[];
   } | null>(null);
+  const [pushEnabled, setPushEnabled] = useState<boolean | null>(null);
+  const [pushMessage, setPushMessage] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -65,6 +68,33 @@ export default function DashboardOverviewPage() {
     })();
   }, [supabase]);
 
+  async function requestPushPermission() {
+    if (typeof window === "undefined") return;
+    const OneSignal = (window as any).OneSignal;
+    if (!OneSignal) {
+      setPushMessage(tx("OneSignal no está cargado aún.", "OneSignal is not loaded yet."));
+      return;
+    }
+
+    try {
+      await OneSignal.showSlidedownPrompt?.();
+      const enabled = await OneSignal.isPushNotificationsEnabled?.();
+      setPushEnabled(Boolean(enabled));
+      setPushMessage(enabled ? tx("Notificaciones activadas.", "Notifications enabled.") : tx("Notificaciones no activadas.", "Notifications not enabled."));
+    } catch {
+      setPushMessage(tx("No se pudo activar la notificación.", "Could not enable notifications."));
+    }
+  }
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const OneSignal = (window as any).OneSignal;
+    if (!OneSignal) return;
+    Promise.resolve(OneSignal.isPushNotificationsEnabled?.())
+      .then((enabled: boolean) => setPushEnabled(Boolean(enabled)))
+      .catch(() => setPushEnabled(null));
+  }, []);
+
   const deltaLabel = stats.deltaAppointments === 0
     ? tx("sin cambio vs ayer", "no change vs yesterday")
     : `${stats.deltaAppointments > 0 ? "+" : ""}${stats.deltaAppointments}% ${tx("vs ayer", "vs yesterday")}`;
@@ -85,6 +115,23 @@ export default function DashboardOverviewPage() {
         <div className="mt-3">
           <QuickActions />
         </div>
+      </Card>
+
+      <Card>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="font-display text-2xl">{tx("Notificaciones push", "Push notifications")}</h2>
+            <p className="mt-1 text-sm text-coolSilver">
+              {pushEnabled
+                ? tx("Activas en este dispositivo.", "Enabled on this device.")
+                : tx("Actívalas para recibir alertas inmediatas.", "Enable to receive real-time alerts.")}
+            </p>
+          </div>
+          <Button onClick={requestPushPermission}>
+            {tx("Activar notificaciones", "Enable notifications")}
+          </Button>
+        </div>
+        {pushMessage ? <p className="mt-2 text-sm text-coolSilver">{pushMessage}</p> : null}
       </Card>
 
       <Card>
