@@ -6,6 +6,13 @@ function getResend() {
   return new Resend(key);
 }
 
+function getFromAddress(kind: "bookings" | "reminders") {
+  if (kind === "reminders") {
+    return process.env.RESEND_REMINDERS_FROM || process.env.RESEND_FROM || null;
+  }
+  return process.env.RESEND_FROM || null;
+}
+
 interface AppointmentEmailInput {
   to: string;
   businessName: string;
@@ -16,9 +23,10 @@ interface AppointmentEmailInput {
 
 export async function sendAppointmentStatusEmail(input: AppointmentEmailInput) {
   const resend = getResend();
-  if (!resend) return { id: "skipped", error: "Missing RESEND_API_KEY" };
+  const from = getFromAddress("bookings");
+  if (!resend || !from) return { id: "skipped", error: "Missing RESEND_API_KEY or RESEND_FROM" };
   return resend.emails.send({
-    from: "LuxApp <bookings@luxapp.io>",
+    from,
     to: input.to,
     subject: `Tu cita está ${input.status}`,
     html: `
@@ -34,9 +42,10 @@ export async function sendAppointmentStatusEmail(input: AppointmentEmailInput) {
 
 export async function sendReminderEmail(input: AppointmentEmailInput, hoursBefore: 24 | 2) {
   const resend = getResend();
-  if (!resend) return { id: "skipped", error: "Missing RESEND_API_KEY" };
+  const from = getFromAddress("reminders");
+  if (!resend || !from) return { id: "skipped", error: "Missing RESEND_API_KEY or RESEND_FROM" };
   return resend.emails.send({
-    from: "LuxApp Reminders <reminders@luxapp.io>",
+    from,
     to: input.to,
     subject: `Recordatorio: cita en ${hoursBefore}h`,
     html: `
