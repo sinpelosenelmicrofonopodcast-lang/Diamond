@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { getClientSupabase } from "@/lib/supabase/client";
+import { CheckCircle, Clock3, DollarSign, XCircle, AlertTriangle, BadgeCheck } from "lucide-react";
 
 type Appointment = {
   id: string;
@@ -53,15 +54,15 @@ export default function AppointmentsPage() {
     client_email: "",
     status: "confirmed"
   });
-  const statusMeta: Record<string, { label: string; className: string }> = {
-    pending_confirmation: { label: tx("Pendiente confirmación", "Pending confirmation"), className: "bg-amber-500/10 text-amber-300 border-amber-400/30" },
-    confirmed: { label: tx("Confirmada", "Confirmed"), className: "bg-emerald-500/10 text-emerald-300 border-emerald-400/30" },
-    awaiting_payment: { label: tx("Pendiente pago", "Awaiting payment"), className: "bg-gold/10 text-softGold border-gold/40" },
-    paid: { label: tx("Pagada", "Paid"), className: "bg-sky-500/10 text-sky-300 border-sky-400/30" },
-    canceled_by_client: { label: tx("Cancelada por cliente", "Canceled by client"), className: "bg-rose-500/10 text-rose-300 border-rose-400/30" },
-    canceled_by_business: { label: tx("Cancelada por negocio", "Canceled by business"), className: "bg-rose-500/10 text-rose-300 border-rose-400/30" },
-    no_show: { label: tx("No show", "No show"), className: "bg-rose-500/10 text-rose-300 border-rose-400/30" },
-    completed: { label: tx("Completada", "Completed"), className: "bg-indigo-500/10 text-indigo-300 border-indigo-400/30" }
+  const statusMeta: Record<string, { label: string; className: string; Icon: any }> = {
+    pending_confirmation: { label: tx("Pendiente confirmación", "Pending confirmation"), className: "bg-amber-500/10 text-amber-300 border-amber-400/30", Icon: Clock3 },
+    confirmed: { label: tx("Confirmada", "Confirmed"), className: "bg-emerald-500/10 text-emerald-300 border-emerald-400/30", Icon: CheckCircle },
+    awaiting_payment: { label: tx("Pendiente pago", "Awaiting payment"), className: "bg-gold/10 text-softGold border-gold/40", Icon: DollarSign },
+    paid: { label: tx("Pagada", "Paid"), className: "bg-sky-500/10 text-sky-300 border-sky-400/30", Icon: BadgeCheck },
+    canceled_by_client: { label: tx("Cancelada por cliente", "Canceled by client"), className: "bg-rose-500/10 text-rose-300 border-rose-400/30", Icon: XCircle },
+    canceled_by_business: { label: tx("Cancelada por negocio", "Canceled by business"), className: "bg-rose-500/10 text-rose-300 border-rose-400/30", Icon: XCircle },
+    no_show: { label: tx("No show", "No show"), className: "bg-rose-500/10 text-rose-300 border-rose-400/30", Icon: AlertTriangle },
+    completed: { label: tx("Completada", "Completed"), className: "bg-indigo-500/10 text-indigo-300 border-indigo-400/30", Icon: BadgeCheck }
   };
   const formatStatus = (value: string) =>
     value
@@ -326,8 +327,11 @@ export default function AppointmentsPage() {
                   </p>
                   </div>
                 </div>
-                <Badge className={statusMeta[String(item.status || "").toLowerCase()]?.className || "bg-silver/10 text-coolSilver border-silver/30"}>
-                  {statusMeta[String(item.status || "").toLowerCase()]?.label || formatStatus(String(item.status || ""))}
+                <Badge className={`inline-flex items-center gap-1.5 ${statusMeta[String(item.status || "").toLowerCase()]?.className || "bg-silver/10 text-coolSilver border-silver/30"}`}>
+                  {statusMeta[String(item.status || "").toLowerCase()]?.Icon ? (
+                    <statusMeta[String(item.status || "").toLowerCase()]!.Icon className="h-3.5 w-3.5" />
+                  ) : null}
+                  <span>{statusMeta[String(item.status || "").toLowerCase()]?.label || formatStatus(String(item.status || ""))}</span>
                 </Badge>
               </div>
               <p className="mt-2 text-xs text-coolSilver">{tx("Depósito requerido", "Required deposit")}: {item.required_deposit_percent}%</p>

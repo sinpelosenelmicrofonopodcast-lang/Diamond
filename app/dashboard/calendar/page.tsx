@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLocale } from "@/components/providers/locale-provider";
 import { Card } from "@/components/ui/card";
 import { getClientSupabase } from "@/lib/supabase/client";
+import { CheckCircle, Clock3, DollarSign, XCircle, AlertTriangle, BadgeCheck } from "lucide-react";
 
 type Appointment = {
   id: string;
@@ -43,6 +44,17 @@ const statusLabels = {
   no_show: { es: "No show", en: "No show" },
   completed: { es: "Completada", en: "Completed" }
 } as const;
+
+const statusIcons: Record<string, any> = {
+  pending_confirmation: Clock3,
+  confirmed: CheckCircle,
+  awaiting_payment: DollarSign,
+  paid: BadgeCheck,
+  canceled_by_client: XCircle,
+  canceled_by_business: XCircle,
+  no_show: AlertTriangle,
+  completed: BadgeCheck
+};
 
 const formatStatus = (value: string) =>
   value
@@ -141,8 +153,16 @@ export default function CalendarPage() {
                         <div key={item.id} className="rounded-2xl border border-gold/20 bg-gradient-to-r from-gold/10 to-transparent p-3 text-xs text-coolSilver">
                           <div className="flex items-center justify-between gap-2">
                             <p className="font-semibold text-softGold">{time}</p>
-                            <span className={`rounded-full border px-2 py-0.5 text-[10px] ${statusStyles[item.status] || "bg-silver/10 text-coolSilver border-silver/30"}`}>
-                              {statusLabels[String(item.status || "").toLowerCase() as keyof typeof statusLabels]?.[locale] || formatStatus(String(item.status || ""))}
+                            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] ${statusStyles[item.status] || "bg-silver/10 text-coolSilver border-silver/30"}`}>
+                              {statusIcons[String(item.status || "").toLowerCase()] ? (
+                                <span className="inline-flex h-3 w-3 items-center justify-center">
+                                  {(() => {
+                                    const Icon = statusIcons[String(item.status || "").toLowerCase()];
+                                    return Icon ? <Icon className="h-3 w-3" /> : null;
+                                  })()}
+                                </span>
+                              ) : null}
+                              <span>{statusLabels[String(item.status || "").toLowerCase() as keyof typeof statusLabels]?.[locale] || formatStatus(String(item.status || ""))}</span>
                             </span>
                           </div>
                           <p className="mt-2 text-textWhite">{item.services?.name || tx("Servicio", "Service")}</p>
