@@ -44,6 +44,11 @@ const statusLabels = {
   completed: { es: "Completada", en: "Completed" }
 } as const;
 
+const formatStatus = (value: string) =>
+  value
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
 export default function CalendarPage() {
   const { locale, tx } = useLocale();
   const supabase = useMemo(() => getClientSupabase(), []);
@@ -137,7 +142,7 @@ export default function CalendarPage() {
                           <div className="flex items-center justify-between gap-2">
                             <p className="font-semibold text-softGold">{time}</p>
                             <span className={`rounded-full border px-2 py-0.5 text-[10px] ${statusStyles[item.status] || "bg-silver/10 text-coolSilver border-silver/30"}`}>
-                              {statusLabels[item.status as keyof typeof statusLabels]?.[locale] || item.status}
+                              {statusLabels[String(item.status || "").toLowerCase() as keyof typeof statusLabels]?.[locale] || formatStatus(String(item.status || ""))}
                             </span>
                           </div>
                           <p className="mt-2 text-textWhite">{item.services?.name || tx("Servicio", "Service")}</p>

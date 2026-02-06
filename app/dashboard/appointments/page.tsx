@@ -63,6 +63,10 @@ export default function AppointmentsPage() {
     no_show: { label: tx("No show", "No show"), className: "bg-rose-500/10 text-rose-300 border-rose-400/30" },
     completed: { label: tx("Completada", "Completed"), className: "bg-indigo-500/10 text-indigo-300 border-indigo-400/30" }
   };
+  const formatStatus = (value: string) =>
+    value
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
 
   async function authHeaders() {
     const { data } = await supabase.auth.getSession();
@@ -322,8 +326,8 @@ export default function AppointmentsPage() {
                   </p>
                   </div>
                 </div>
-                <Badge className={statusMeta[item.status]?.className || "bg-silver/10 text-coolSilver border-silver/30"}>
-                  {statusMeta[item.status]?.label || item.status}
+                <Badge className={statusMeta[String(item.status || "").toLowerCase()]?.className || "bg-silver/10 text-coolSilver border-silver/30"}>
+                  {statusMeta[String(item.status || "").toLowerCase()]?.label || formatStatus(String(item.status || ""))}
                 </Badge>
               </div>
               <p className="mt-2 text-xs text-coolSilver">{tx("Depósito requerido", "Required deposit")}: {item.required_deposit_percent}%</p>

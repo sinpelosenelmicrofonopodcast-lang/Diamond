@@ -41,6 +41,10 @@ export default function ClientAppointmentsPage() {
     no_show: { label: tx("No show", "No show"), className: "bg-rose-500/10 text-rose-300 border-rose-400/30" },
     completed: { label: tx("Completada", "Completed"), className: "bg-indigo-500/10 text-indigo-300 border-indigo-400/30" }
   };
+  const formatStatus = (value: string) =>
+    value
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
 
   async function authHeaders() {
     const { data } = await supabase.auth.getSession();
@@ -143,7 +147,11 @@ export default function ClientAppointmentsPage() {
           const hasStripe = methods.some((m: any) => m.method === "stripe");
           const deposit = item.required_deposit_cents || 0;
           const total = item.total_price_cents || 0;
-          const statusView = statusMeta[item.status] || { label: item.status, className: "bg-silver/10 text-coolSilver border-silver/30" };
+          const normalizedStatus = String(item.status || "").toLowerCase();
+          const statusView = statusMeta[normalizedStatus] || {
+            label: formatStatus(normalizedStatus || item.status),
+            className: "bg-silver/10 text-coolSilver border-silver/30"
+          };
           return (
             <div key={item.id} className="rounded-xl border border-silver/20 bg-black/40 p-4">
               <div className="flex items-start justify-between gap-3">
