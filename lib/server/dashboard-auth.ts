@@ -3,6 +3,25 @@ import { createClient } from "@supabase/supabase-js";
 import { SINGLE_BUSINESS_SLUG_ALIASES } from "@/lib/single-business";
 import { getAdminSupabase } from "@/lib/supabase/admin";
 
+async function pickBestBusinessForUser(admin: ReturnType<typeof getAdminSupabase>, candidates: Array<{ id: string; slug?: string | null; created_at?: string }>) {
+  if (candidates.length <= 1) return candidates[0] || null;
+
+  const preferred = candidates.find((row) =>
+    SINGLE_BUSINESS_SLUG_ALIASES.includes(String(row.slug || "") as (typeof SINGLE_BUSINESS_SLUG_ALIASES)[number])
+  );
+  if (preferred) return preferred;
+
+  const ids = candidates.map((item) => item.id);
+  const { data: serviceRows } = await admin.from("services").select("business_id").in("business_id", ids);
+  const serviceCount = new Map<string, number>();
+  for (const row of serviceRows || []) {
+    serviceCount.set((row as any).business_id, (serviceCount.get((row as any).business_id) || 0) + 1);
+  }
+
+  const ranked = [...candidates].sort((a, b) => (serviceCount.get(b.id) || 0) - (serviceCount.get(a.id) || 0));
+  return ranked[0] || null;
+}
+
 export interface DashboardContext {
   userId: string;
   email: string | null;
@@ -37,10 +56,7 @@ export async function getDashboardContext(req: Request): Promise<{ ctx?: Dashboa
     .order("created_at", { ascending: true })
     .limit(50);
 
-  const preferredOwned =
-    (ownedBusinesses || []).find((row: any) =>
-      SINGLE_BUSINESS_SLUG_ALIASES.includes(String(row.slug || "") as (typeof SINGLE_BUSINESS_SLUG_ALIASES)[number])
-    ) || (ownedBusinesses || [])[0];
+  const preferredOwned = await pickBestBusinessForUser(admin, (ownedBusinesses || []) as any[]);
 
   if (preferredOwned?.id) {
     return {
@@ -71,10 +87,7 @@ export async function getDashboardContext(req: Request): Promise<{ ctx?: Dashboa
     .in("id", membershipBusinessIds)
     .order("created_at", { ascending: true });
 
-  const preferredMemberBusiness =
-    (memberBusinesses || []).find((row: any) =>
-      SINGLE_BUSINESS_SLUG_ALIASES.includes(String(row.slug || "") as (typeof SINGLE_BUSINESS_SLUG_ALIASES)[number])
-    ) || (memberBusinesses || [])[0];
+  const preferredMemberBusiness = await pickBestBusinessForUser(admin, (memberBusinesses || []) as any[]);
 
   if (!preferredMemberBusiness?.id) {
     return { error: "No tienes negocio asignado", status: 403 };

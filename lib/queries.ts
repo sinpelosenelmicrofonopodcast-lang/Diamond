@@ -4,56 +4,91 @@ import { SINGLE_BUSINESS_SLUG_ALIASES } from "@/lib/single-business";
 
 export async function searchBusinesses(filters: SearchFilters): Promise<BusinessCard[]> {
   try {
-    const supabase = getServerSupabase();
+    const { business } = await getBusinessBySlug(SINGLE_BUSINESS_SLUG_ALIASES[0]);
+    if (!business) return [];
 
-    let query = supabase
-      .from("businesses")
-      .select("id, slug, name, city, category, rating, cover_url, logo_url, available_today")
-      .in("slug", [...SINGLE_BUSINESS_SLUG_ALIASES])
-      .order("priority_rank", { ascending: true });
+    const matchCity = !filters.city || String(business.city || "").toLowerCase().includes(filters.city.toLowerCase());
+    const matchCategory = !filters.category || String(business.category || "").toLowerCase() === filters.category.toLowerCase();
+    const matchQuery =
+      !filters.query ||
+      String(business.name || "").toLowerCase().includes(filters.query.toLowerCase()) ||
+      String(business.slug || "").toLowerCase().includes(filters.query.toLowerCase());
 
-    if (filters.city) query = query.ilike("city", `%${filters.city}%`);
-    if (filters.category) query = query.eq("category", filters.category);
-    if (filters.query) query = query.or(`name.ilike.%${filters.query}%,slug.ilike.%${filters.query}%`);
+    if (!matchCity || !matchCategory || !matchQuery) return [];
 
-    const { data, error } = await query.limit(24);
-
-    if (error || !data) return [];
-
-    return data.map((row) => ({
-      id: row.id,
-      slug: row.slug,
-      name: row.name,
-      city: row.city,
-      category: row.category,
-      rating: row.rating || undefined,
-      coverUrl: row.cover_url || undefined,
-      logoUrl: row.logo_url || undefined,
-      availableToday: row.available_today
-    }));
+    return [
+      {
+        id: business.id,
+        slug: business.slug,
+        name: business.name,
+        city: business.city,
+        category: business.category,
+        rating: business.rating || undefined,
+        coverUrl: business.cover_url || undefined,
+        logoUrl: business.logo_url || undefined,
+        availableToday: business.available_today
+      }
+    ];
   } catch {
     return [];
   }
 }
 
+async function resolveDiamondBusiness(supabase: ReturnType<typeof getServerSupabase>, slug: string) {
+  const { data: directBusiness } = await supabase.from("businesses").select("*").eq("slug", slug).maybeSingle();
+  if (directBusiness) return directBusiness;
+
+  const isDiamondRoute = SINGLE_BUSINESS_SLUG_ALIASES.includes(slug as (typeof SINGLE_BUSINESS_SLUG_ALIASES)[number]);
+  if (!isDiamondRoute) return null;
+
+  const { data: candidates } = await supabase
+    .from("businesses")
+    .select("*")
+    .order("created_at", { ascending: true })
+    .limit(100);
+
+  if (!candidates || candidates.length === 0) return null;
+
+  const ids = candidates.map((item: any) => item.id);
+  const [{ data: serviceRows }, { data: appointmentRows }] = await Promise.all([
+    ids.length ? supabase.from("services").select("business_id").in("business_id", ids) : Promise.resolve({ data: [] as any[] }),
+    ids.length ? supabase.from("appointments").select("business_id").in("business_id", ids) : Promise.resolve({ data: [] as any[] })
+  ]);
+
+  const serviceCount = new Map<string, number>();
+  for (const row of serviceRows || []) {
+    serviceCount.set(row.business_id, (serviceCount.get(row.business_id) || 0) + 1);
+  }
+
+  const appointmentCount = new Map<string, number>();
+  for (const row of appointmentRows || []) {
+    appointmentCount.set(row.business_id, (appointmentCount.get(row.business_id) || 0) + 1);
+  }
+
+  const normalized = (value: unknown) => String(value || "").toLowerCase();
+  const scored = candidates
+    .map((item: any) => {
+      const slugValue = normalized(item.slug);
+      const nameValue = normalized(item.name);
+      let score = 0;
+      if (SINGLE_BUSINESS_SLUG_ALIASES.includes(item.slug)) score += 300;
+      if (nameValue.includes("diamond")) score += 120;
+      if (nameValue.includes("nicole")) score += 80;
+      if (slugValue.includes("diamond")) score += 60;
+      if (item.is_active) score += 20;
+      score += (serviceCount.get(item.id) || 0) * 6;
+      score += (appointmentCount.get(item.id) || 0) * 2;
+      return { item, score };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  return scored[0]?.item || null;
+}
+
 export async function getBusinessBySlug(slug: string) {
   try {
     const supabase = getServerSupabase();
-    const { data: directBusiness } = await supabase.from("businesses").select("*").eq("slug", slug).maybeSingle();
-    const business =
-      directBusiness ||
-      (SINGLE_BUSINESS_SLUG_ALIASES.includes(slug as (typeof SINGLE_BUSINESS_SLUG_ALIASES)[number])
-        ? (
-            await supabase
-              .from("businesses")
-              .select("*")
-              .in("slug", [...SINGLE_BUSINESS_SLUG_ALIASES])
-              .eq("is_active", true)
-              .order("created_at", { ascending: true })
-              .limit(1)
-              .maybeSingle()
-          ).data
-        : null);
+    const business = await resolveDiamondBusiness(supabase, slug);
 
     if (!business) {
       return { business: null, services: [], staff: [], policies: null };
