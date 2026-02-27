@@ -112,7 +112,7 @@ export function GlobalHeader() {
               <span className="font-display text-2xl text-softGold">Diamond Studio</span>
             ) : (
               <img
-                src="/diamond-studio-logo.png"
+                src="/diamond-studio-logo.svg?v=2"
                 alt="Diamond Studio by Nicole"
                 className="h-10 w-auto rounded-lg object-contain"
                 loading="eager"

@@ -3,7 +3,7 @@ export default function Loading() {
     <main className="flex min-h-screen items-center justify-center bg-black">
       <div className="flex flex-col items-center gap-4">
         <img
-          src="/diamond-studio-logo.png"
+          src="/diamond-studio-logo.svg?v=2"
           alt="Diamond Studio by Nicole"
           className="h-24 w-24 animate-pulse rounded-2xl border border-gold/40 object-contain"
         />
