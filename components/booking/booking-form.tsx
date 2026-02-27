@@ -81,6 +81,8 @@ export function BookingForm({
     () => services.filter((item) => selectedServiceIds.includes(item.id)),
     [services, selectedServiceIds]
   );
+  const noServices = services.length === 0;
+  const noStaff = staff.length === 0;
 
   const categoryOptions = useMemo(() => {
     const set = new Set<string>();
@@ -306,6 +308,11 @@ export function BookingForm({
         <Card>
           <h2 className="font-display text-2xl">1. {t("booking.service")}</h2>
           <p className="mt-1 text-sm text-mutedText">{tx("Selecciona el servicio ideal para tu cita.", "Select the ideal service for your appointment.")}</p>
+          {noServices ? (
+            <p className="mt-4 rounded-2xl border border-silver/20 bg-black/40 p-4 text-sm text-coolSilver">
+              {tx("Este negocio aún no tiene servicios publicados.", "This business has no published services yet.")}
+            </p>
+          ) : null}
           <div className="mt-4 space-y-2 text-sm text-coolSilver">
             <div className="flex flex-wrap gap-2 pb-2">
               {categoryOptions.map((cat) => (
@@ -333,11 +340,7 @@ export function BookingForm({
                 <span className="flex items-center gap-3">
                   {"image_url" in service && service.image_url ? (
                     <img src={service.image_url as string} alt={service.name} className="h-10 w-10 rounded-xl object-cover" />
-                  ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-silver/20 text-[10px] text-coolSilver">
-                      {tx("Foto", "Photo")}
-                    </div>
-                  )}
+                  ) : null}
                   <span>
                     <span className="block text-textWhite">{service.name}</span>
                     <span className="text-xs text-mutedText">
@@ -391,6 +394,11 @@ export function BookingForm({
         <Card>
           <h2 className="font-display text-2xl">2. {t("booking.staff")}</h2>
           <p className="mt-1 text-sm text-mutedText">{tx("Elige quién te atenderá.", "Choose who will serve you.")}</p>
+          {noStaff ? (
+            <p className="mt-4 rounded-2xl border border-silver/20 bg-black/40 p-4 text-sm text-coolSilver">
+              {tx("No hay staff disponible para reservar en este momento.", "No staff is available to book right now.")}
+            </p>
+          ) : null}
           <div className="mt-4 grid grid-cols-1 gap-2 text-sm md:grid-cols-2">
             {staff.map((member) => (
               <button
@@ -436,6 +444,11 @@ export function BookingForm({
               timeZone={timeZone}
             />
           )}
+          {!loadingSlots && slotOptions.length === 0 ? (
+            <p className="mt-3 rounded-2xl border border-silver/20 bg-black/40 p-3 text-sm text-coolSilver">
+              {tx("No hay horarios disponibles con la configuración actual.", "No available times with the current setup.")}
+            </p>
+          ) : null}
         </div>
       </Card>
 

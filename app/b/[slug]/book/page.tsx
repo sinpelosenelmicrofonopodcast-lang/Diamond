@@ -45,7 +45,21 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
   const availablePaymentMethods = paymentMethods || [];
   const bookableStaff = (staff || []).filter((member: any) => Boolean(member.avatar_url));
 
-  if (!business) return null;
+  if (!business) {
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-10">
+        <Card>
+          <h1 className="font-display text-3xl">{tx("Reserva no disponible", "Booking unavailable")}</h1>
+          <p className="mt-3 text-coolSilver">
+            {tx("No se encontró el perfil del negocio. Regresa al inicio e intenta de nuevo.", "Business profile not found. Go back home and try again.")}
+          </p>
+          <a className="mt-4 inline-flex rounded-2xl border border-gold/30 px-4 py-2 text-softGold hover:bg-gold/10" href="/">
+            {tx("Volver al inicio", "Back to home")}
+          </a>
+        </Card>
+      </main>
+    );
+  }
 
   const now = new Date();
   const bookingWindowEnd = addDays(now, 30);

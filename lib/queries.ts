@@ -9,7 +9,6 @@ export async function searchBusinesses(filters: SearchFilters): Promise<Business
     let query = supabase
       .from("businesses")
       .select("id, slug, name, city, category, rating, cover_url, logo_url, available_today")
-      .eq("is_active", true)
       .in("slug", [...SINGLE_BUSINESS_SLUG_ALIASES])
       .order("priority_rank", { ascending: true });
 
@@ -60,12 +59,11 @@ export async function getBusinessBySlug(slug: string) {
       return { business: null, services: [], staff: [], policies: null };
     }
 
-    const [{ data: services }, { data: staff }, { data: policies }, { data: paymentMethods }, { data: ownerProfile }, { data: reviews }, { data: specials }] = await Promise.all([
+    const [{ data: servicesRaw }, { data: staff }, { data: policies }, { data: paymentMethods }, { data: ownerProfile }, { data: reviews }, { data: specials }] = await Promise.all([
       supabase
         .from("services")
         .select("id, name, category, description, duration_min, buffer_before_min, buffer_after_min, price_cents, price_starts_at, image_url, requires_confirmation, requires_payment, is_active, sort_order")
         .eq("business_id", business.id)
-        .eq("is_active", true)
         .order("sort_order", { ascending: true }),
       supabase.from("staff_profiles").select("*").eq("business_id", business.id).eq("is_active", true),
       supabase.from("business_policies").select("*").eq("business_id", business.id).single(),
@@ -113,7 +111,11 @@ export async function getBusinessBySlug(slug: string) {
               }
             ];
 
-    return { business, services: services || [], staff: normalizedStaff, policies, paymentMethods: paymentMethods || [], reviews: reviews || [], specials: specials || [] };
+    const allServices = servicesRaw || [];
+    const activeServices = allServices.filter((item: any) => item.is_active !== false);
+    const services = activeServices.length > 0 ? activeServices : allServices;
+
+    return { business, services, staff: normalizedStaff, policies, paymentMethods: paymentMethods || [], reviews: reviews || [], specials: specials || [] };
   } catch {
     return { business: null, services: [], staff: [], policies: null, paymentMethods: [], reviews: [], specials: [] };
   }
