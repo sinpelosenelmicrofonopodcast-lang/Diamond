@@ -12,11 +12,12 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid locale" }, { status: 400 });
 
   const store = await cookies();
-  store.set("luxapp_locale", parsed.data.locale, {
+  store.set("diamond_locale", parsed.data.locale, {
     path: "/",
     maxAge: 60 * 60 * 24 * 365,
     sameSite: "lax"
   });
+  store.delete("luxapp_locale");
 
   return NextResponse.json({ ok: true });
 }

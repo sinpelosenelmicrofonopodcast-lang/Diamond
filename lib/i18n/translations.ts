@@ -24,7 +24,7 @@ export const translations = {
     },
     home: {
       title: "Reserva servicios locales con experiencia de lujo",
-      subtitle: "LuxApp conecta clientes con negocios de belleza y bienestar con reservas rápidas, depósitos inteligentes y protección anti no-show.",
+      subtitle: "Diamond Studio by Nicole te permite reservar citas premium con depósitos inteligentes y protección anti no-show.",
       ctaSignup: "Crear cuenta gratis",
       ctaLogin: "Ya tengo cuenta",
       featured: "Negocios recomendados",
@@ -53,7 +53,7 @@ export const translations = {
     },
     auth: {
       signinTitle: "Entrar con email y contraseña",
-      signupTitle: "Crear cuenta con contraseña",
+      signupTitle: "Crear cuenta para reservar en Diamond Studio by Nicole",
       forgot: "¿Olvidaste tu contraseña?",
       reset: "Restablecer",
       email: "Email",
@@ -61,7 +61,6 @@ export const translations = {
       firstName: "Nombre",
       lastName: "Apellido",
       phone: "Teléfono",
-      businessAccount: "Soy negocio",
       clientAccount: "Soy cliente"
     },
     dashboard: {
@@ -98,7 +97,7 @@ export const translations = {
     },
     home: {
       title: "Book local services with a luxury experience",
-      subtitle: "LuxApp connects clients with beauty and wellness businesses through fast booking, smart deposits, and no-show protection.",
+      subtitle: "Diamond Studio by Nicole lets you book premium appointments with smart deposits and no-show protection.",
       ctaSignup: "Create free account",
       ctaLogin: "I already have an account",
       featured: "Featured businesses",
@@ -127,7 +126,7 @@ export const translations = {
     },
     auth: {
       signinTitle: "Sign in with email and password",
-      signupTitle: "Create account with password",
+      signupTitle: "Create account to book with Diamond Studio by Nicole",
       forgot: "Forgot password?",
       reset: "Reset",
       email: "Email",
@@ -135,7 +134,6 @@ export const translations = {
       firstName: "First name",
       lastName: "Last name",
       phone: "Phone",
-      businessAccount: "I am a business",
       clientAccount: "I am a client"
     },
     dashboard: {

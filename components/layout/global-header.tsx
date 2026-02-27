@@ -19,6 +19,7 @@ export function GlobalHeader() {
   const [loadingLogout, setLoadingLogout] = useState(false);
   const [logoError, setLogoError] = useState(false);
   const [appointmentsBadge, setAppointmentsBadge] = useState<number>(0);
+  const isBusinessUser = role === "owner" || role === "staff" || role === "admin";
 
   useEffect(() => {
     let mounted = true;
@@ -61,7 +62,7 @@ export function GlobalHeader() {
     let active = true;
 
     async function loadAlerts() {
-      if (!user || !(role === "owner" || role === "staff" || role === "admin" || user.user_metadata?.account_type === "business")) {
+      if (!user || !isBusinessUser) {
         if (active) setAppointmentsBadge(0);
         return;
       }
@@ -83,7 +84,7 @@ export function GlobalHeader() {
     return () => {
       active = false;
     };
-  }, [supabase, user, role]);
+  }, [supabase, user, role, isBusinessUser]);
 
   async function handleLogout() {
     setLoadingLogout(true);
@@ -91,13 +92,7 @@ export function GlobalHeader() {
     window.location.href = "/";
   }
 
-  const isAdmin = role === "admin";
-  const panelHref = isAdmin
-    ? "/admin"
-    : role === "owner" || role === "staff" || user?.user_metadata?.account_type === "business"
-      ? "/dashboard/overview"
-      : "/client/appointments";
-  const canSeePricing = false;
+  const panelHref = isBusinessUser ? "/dashboard/overview" : "/client/appointments";
 
   const displayName = user?.user_metadata?.full_name || user?.email || t("nav.profile");
   const initials = displayName
@@ -114,11 +109,11 @@ export function GlobalHeader() {
         <div className="flex flex-wrap items-center gap-2">
           <Link className="flex items-center gap-2" href="/">
             {logoError ? (
-              <span className="font-display text-2xl text-softGold">LuxApp</span>
+              <span className="font-display text-2xl text-softGold">Diamond Studio</span>
             ) : (
               <img
-                src="/luxapp-logo.png"
-                alt="LuxApp"
+                src="/diamond-studio-logo.png"
+                alt="Diamond Studio by Nicole"
                 className="h-10 w-auto rounded-lg object-contain"
                 loading="eager"
                 onError={() => setLogoError(true)}
@@ -128,11 +123,6 @@ export function GlobalHeader() {
           <Link className="hidden rounded-lg px-3 py-2 text-sm text-coolSilver hover:bg-gold/10 hover:text-softGold sm:inline-flex" href="/">
             {t("nav.home")}
           </Link>
-          {canSeePricing ? (
-            <Link className="hidden rounded-lg px-3 py-2 text-sm text-coolSilver hover:bg-gold/10 hover:text-softGold sm:inline-flex" href="/pricing">
-              {t("nav.plans")}
-            </Link>
-          ) : null}
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -145,7 +135,7 @@ export function GlobalHeader() {
           </button>
           {user ? (
             <>
-              {(role === "owner" || role === "staff" || role === "admin" || user?.user_metadata?.account_type === "business") ? (
+              {isBusinessUser ? (
                 <Link
                   href="/dashboard/appointments"
                   className="relative inline-flex items-center gap-2 rounded-lg border border-gold/20 px-3 py-2 text-xs text-softGold hover:bg-gold/10"
@@ -174,11 +164,6 @@ export function GlobalHeader() {
               <Button asChild size="sm" variant="secondary">
                 <Link href={panelHref}>{t("nav.panel")}</Link>
               </Button>
-              {isAdmin ? (
-                <Button asChild size="sm" variant="secondary">
-                  <Link href="/admin">Admin</Link>
-                </Button>
-              ) : null}
               <Button onClick={handleLogout} size="sm" disabled={loadingLogout}>
                 {loadingLogout ? `${t("common.loading")}` : t("nav.logout")}
               </Button>

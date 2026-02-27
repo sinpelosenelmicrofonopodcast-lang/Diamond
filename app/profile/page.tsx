@@ -164,7 +164,7 @@ export default function ProfilePage() {
           <form className="mt-4 space-y-3" onSubmit={onSave}>
             {!form.avatarUrl ? (
               <div className="rounded-xl border border-rose-400/40 bg-rose-500/10 p-3 text-sm text-rose-200">
-                {tx("Foto de perfil requerida para usar LuxApp (seguridad de clientes y proveedores).", "Profile photo required to use LuxApp (client/provider security).")}
+                {tx("Foto de perfil requerida para usar Diamond Studio by Nicole (seguridad de clientes y proveedores).", "Profile photo required to use Diamond Studio by Nicole (client/provider security).")}
               </div>
             ) : null}
             <div className="flex items-center gap-3">

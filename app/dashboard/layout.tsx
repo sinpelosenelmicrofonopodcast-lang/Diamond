@@ -22,7 +22,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <main className="mx-auto grid max-w-7xl gap-5 px-4 py-6 md:grid-cols-[220px_1fr]">
       <aside className="lux-card h-fit space-y-1 p-3">
-        <p className="px-2 pb-2 font-display text-xl text-softGold">{tx("LuxApp Pro", "LuxApp Pro")}</p>
+        <p className="px-2 pb-2 font-display text-xl text-softGold">{tx("Diamond Panel", "Diamond Panel")}</p>
         {links.map(([label, href]) => (
           <Link key={href} href={href} className="block rounded-xl px-3 py-2 text-sm text-coolSilver hover:bg-gold/10 hover:text-softGold">
             {label}

@@ -4,7 +4,7 @@ import { defaultLocale, type Locale, resolveTranslation } from "@/lib/i18n/trans
 
 export async function getServerLocale(): Promise<Locale> {
   const store = await cookies();
-  const value = store.get("luxapp_locale")?.value;
+  const value = store.get("diamond_locale")?.value || store.get("luxapp_locale")?.value;
   return value === "en" || value === "es" ? value : defaultLocale;
 }
 

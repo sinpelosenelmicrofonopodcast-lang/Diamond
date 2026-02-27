@@ -163,7 +163,7 @@ export default function ClientsPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "luxapp_clients.csv";
+    link.download = "diamond_studio_clients.csv";
     link.click();
     URL.revokeObjectURL(url);
   }

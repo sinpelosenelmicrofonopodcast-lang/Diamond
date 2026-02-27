@@ -43,7 +43,7 @@ export async function createBusinessNotification(input: BusinessNotificationInpu
       if (targetUserId) {
         await sendPushToUser({
           userId: targetUserId,
-          title: String(input.payload?.title || "LuxApp"),
+          title: String(input.payload?.title || "Diamond Studio by Nicole"),
           body: String(input.payload?.body || "Tienes una nueva notificación."),
           data: input.payload || {}
         });
@@ -71,7 +71,7 @@ export async function createUserNotification(input: UserNotificationInput) {
     try {
       await sendPushToUser({
         userId: input.userId,
-        title: String(input.payload?.title || "LuxApp"),
+        title: String(input.payload?.title || "Diamond Studio by Nicole"),
         body: String(input.payload?.body || "Tienes una nueva notificación."),
         data: input.payload || {}
       });

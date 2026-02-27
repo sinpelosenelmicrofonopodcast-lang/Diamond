@@ -18,7 +18,7 @@ export function LocaleProvider({ children, initialLocale }: { children: React.Re
 
   function setLocale(next: Locale) {
     setLocaleState(next);
-    document.cookie = `luxapp_locale=${next}; path=/; max-age=31536000`;
+    document.cookie = `diamond_locale=${next}; path=/; max-age=31536000`;
     void fetch("/api/locale", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
