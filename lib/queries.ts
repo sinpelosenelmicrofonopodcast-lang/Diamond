@@ -1,4 +1,5 @@
 import { getServerSupabase } from "@/lib/supabase/server";
+import { getAdminSupabase } from "@/lib/supabase/admin";
 import { BusinessCard, SearchFilters } from "@/types/domain";
 import { SINGLE_BUSINESS_SLUG_ALIASES } from "@/lib/single-business";
 
@@ -34,7 +35,14 @@ export async function searchBusinesses(filters: SearchFilters): Promise<Business
   }
 }
 
-async function resolveDiamondBusiness(supabase: ReturnType<typeof getServerSupabase>, slug: string) {
+function getReadSupabase() {
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    return getAdminSupabase();
+  }
+  return getServerSupabase();
+}
+
+async function resolveDiamondBusiness(supabase: any, slug: string) {
   const { data: directBusiness } = await supabase.from("businesses").select("*").eq("slug", slug).maybeSingle();
   if (directBusiness) return directBusiness;
 
@@ -66,8 +74,8 @@ async function resolveDiamondBusiness(supabase: ReturnType<typeof getServerSupab
   }
 
   const normalized = (value: unknown) => String(value || "").toLowerCase();
-  const scored = candidates
-    .map((item: any) => {
+    const scored = candidates
+      .map((item: any) => {
       const slugValue = normalized(item.slug);
       const nameValue = normalized(item.name);
       let score = 0;
@@ -77,17 +85,17 @@ async function resolveDiamondBusiness(supabase: ReturnType<typeof getServerSupab
       if (slugValue.includes("diamond")) score += 60;
       if (item.is_active) score += 20;
       score += (serviceCount.get(item.id) || 0) * 6;
-      score += (appointmentCount.get(item.id) || 0) * 2;
-      return { item, score };
-    })
-    .sort((a, b) => b.score - a.score);
+        score += (appointmentCount.get(item.id) || 0) * 2;
+        return { item, score };
+      })
+      .sort((a: { score: number }, b: { score: number }) => b.score - a.score);
 
   return scored[0]?.item || null;
 }
 
 export async function getBusinessBySlug(slug: string) {
   try {
-    const supabase = getServerSupabase();
+    const supabase = getReadSupabase();
     const business = await resolveDiamondBusiness(supabase, slug);
 
     if (!business) {
