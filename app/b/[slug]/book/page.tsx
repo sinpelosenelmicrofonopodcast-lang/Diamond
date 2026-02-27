@@ -12,6 +12,9 @@ import { getAdminSupabase } from "@/lib/supabase/admin";
 import { getBusinessBySlug } from "@/lib/queries";
 import { SINGLE_BUSINESS_SLUG, isSingleBusinessSlug } from "@/lib/single-business";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 function applyBusinessTime(baseDate: Date, timeValue: string) {
   const [hhRaw, mmRaw] = timeValue.split(":");
   const hh = Number(hhRaw || 0);

@@ -12,6 +12,9 @@ import { getBusinessBySlug } from "@/lib/queries";
 import { getServerLocale } from "@/lib/i18n/server";
 import { SINGLE_BUSINESS_SLUG, isSingleBusinessSlug } from "@/lib/single-business";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function BusinessPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   if (!isSingleBusinessSlug(slug)) {

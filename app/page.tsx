@@ -2,6 +2,9 @@ import { DiamondSlideshow } from "@/components/marketing/diamond-slideshow";
 import { getBusinessBySlug } from "@/lib/queries";
 import { SINGLE_BUSINESS_SLUG, SINGLE_BUSINESS_NAME } from "@/lib/single-business";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function Home() {
   const { business, services, specials } = await getBusinessBySlug(SINGLE_BUSINESS_SLUG);
 
