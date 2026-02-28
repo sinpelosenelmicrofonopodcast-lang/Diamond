@@ -20,6 +20,7 @@ export function GlobalHeader() {
   const [logoError, setLogoError] = useState(false);
   const [appointmentsBadge, setAppointmentsBadge] = useState<number>(0);
   const isBusinessUser = role === "owner" || role === "staff" || role === "admin";
+  const safeAvatarUrl = typeof avatarUrl === "string" ? avatarUrl : null;
 
   useEffect(() => {
     let mounted = true;
@@ -86,7 +87,8 @@ export function GlobalHeader() {
         const contentType = res.headers.get("content-type") || "";
         if (!contentType.includes("application/json")) return;
         const payload = await res.json().catch(() => ({ alerts: [] }));
-        const unread = (payload.alerts || []).filter((alert: any) => !alert.read_at);
+        const alerts = Array.isArray(payload?.alerts) ? payload.alerts : [];
+        const unread = alerts.filter((alert: any) => !alert?.read_at);
         if (active) setAppointmentsBadge(unread.length);
       } catch {
         if (active) setAppointmentsBadge(0);
@@ -107,7 +109,8 @@ export function GlobalHeader() {
 
   const panelHref = isBusinessUser ? "/dashboard/overview" : "/client/appointments";
 
-  const displayName = user?.user_metadata?.full_name || user?.email || t("nav.profile");
+  const displayNameRaw = user?.user_metadata?.full_name ?? user?.email ?? t("nav.profile");
+  const displayName = typeof displayNameRaw === "string" ? displayNameRaw : String(displayNameRaw ?? t("nav.profile"));
   const initials = displayName
     .split(" ")
     .filter(Boolean)
@@ -167,8 +170,8 @@ export function GlobalHeader() {
                 aria-label={t("nav.profile")}
                 title={t("nav.profile")}
               >
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt={tx("Avatar", "Avatar")} className="h-9 w-9 rounded-xl object-cover" />
+                {safeAvatarUrl ? (
+                  <img src={safeAvatarUrl} alt={tx("Avatar", "Avatar")} className="h-9 w-9 rounded-xl object-cover" />
                 ) : (
                   initials
                 )}
