@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { Manrope, Playfair_Display } from "next/font/google";
 import "./globals.css";
-import { GlobalHeader } from "@/components/layout/global-header";
 import { LocaleProvider } from "@/components/providers/locale-provider";
-import { OneSignalProvider } from "@/components/providers/onesignal-provider";
+import { RuntimeGuards } from "@/components/providers/runtime-guards";
 import { getServerLocale } from "@/lib/i18n/server";
 import Script from "next/script";
 
@@ -34,14 +33,14 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getServerLocale();
+  const onesignalAppId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
 
   return (
     <html lang={locale} suppressHydrationWarning>
       <body className={`${manrope.variable} ${playfair.variable} antialiased`}>
-        <Script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" strategy="afterInteractive" />
+        {onesignalAppId ? <Script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" strategy="afterInteractive" /> : null}
         <LocaleProvider initialLocale={locale}>
-          <OneSignalProvider />
-          <GlobalHeader />
+          <RuntimeGuards />
           {children}
         </LocaleProvider>
       </body>
