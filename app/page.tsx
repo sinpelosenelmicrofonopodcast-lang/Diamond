@@ -1,4 +1,5 @@
 import { DiamondSlideshow } from "@/components/marketing/diamond-slideshow";
+import { normalizeImageSrc } from "@/lib/media";
 import { getBusinessBySlug } from "@/lib/queries";
 import { SINGLE_BUSINESS_SLUG, SINGLE_BUSINESS_NAME } from "@/lib/single-business";
 
@@ -18,12 +19,13 @@ export default async function Home() {
   }>;
 
   const gallery = [
-    business?.cover_url ? { src: business.cover_url, alt: `${SINGLE_BUSINESS_NAME} cover` } : null,
-    business?.logo_url ? { src: business.logo_url, alt: `${SINGLE_BUSINESS_NAME} logo` } : null,
+    normalizeImageSrc(business?.cover_url) ? { src: normalizeImageSrc(business?.cover_url) as string, alt: `${SINGLE_BUSINESS_NAME} cover` } : null,
+    normalizeImageSrc(business?.logo_url) ? { src: normalizeImageSrc(business?.logo_url) as string, alt: `${SINGLE_BUSINESS_NAME} logo` } : null,
     ...typedServices
-      .filter((item) => Boolean(item.image_url))
+      .map((item) => ({ src: normalizeImageSrc(item.image_url), alt: item.name }))
+      .filter((item) => Boolean(item.src))
       .slice(0, 6)
-      .map((item) => ({ src: item.image_url as string, alt: item.name as string }))
+      .map((item) => ({ src: item.src as string, alt: item.alt as string }))
   ].filter(Boolean) as Array<{ src: string; alt: string }>;
 
   const categorized: Array<[string, typeof typedServices]> = Object.entries(

@@ -8,6 +8,7 @@ import { ReviewSection } from "@/components/reviews/review-section";
 import { FacebookIcon, InstagramIcon, TikTokIcon } from "@/components/icons/social";
 import { generateSmartSlots } from "@/lib/booking/smart-slots";
 import { getServerLocale } from "@/lib/i18n/server";
+import { normalizeImageSrc } from "@/lib/media";
 import { getAdminSupabase } from "@/lib/supabase/admin";
 import { getBusinessBySlug } from "@/lib/queries";
 import { SINGLE_BUSINESS_SLUG, isSingleBusinessSlug } from "@/lib/single-business";
@@ -32,6 +33,8 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
   const { business, services, staff, policies, paymentMethods, reviews } = await getBusinessBySlug(slug);
   const locale = await getServerLocale();
   const tx = (es: string, en: string) => (locale === "en" ? en : es);
+  const coverUrl = normalizeImageSrc(business?.cover_url);
+  const logoUrl = normalizeImageSrc(business?.logo_url);
   const socialLinks = [
     { key: "instagram", label: "Instagram", url: business?.instagram_url, icon: InstagramIcon },
     { key: "facebook", label: "Facebook", url: business?.facebook_url, icon: FacebookIcon },
@@ -156,16 +159,16 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
     <main className="mx-auto max-w-6xl space-y-6 px-4 py-8">
       <section className="lux-card overflow-hidden p-0">
         <div className="relative h-52 w-full">
-          {business.cover_url ? (
-            <Image src={business.cover_url} alt={`Cover ${business.name}`} fill className="object-cover" />
+          {coverUrl ? (
+            <Image src={coverUrl} alt={`Cover ${business.name}`} fill className="object-cover" />
           ) : (
             <div className="h-full w-full bg-gradient-to-r from-gold/20 to-silver/10" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
               <div className="absolute bottom-5 left-5 flex items-end gap-3">
-            {business.logo_url ? (
+            {logoUrl ? (
               <Image
-                src={business.logo_url}
+                src={logoUrl}
                 alt={`Logo ${business.name}`}
                 width={72}
                 height={72}

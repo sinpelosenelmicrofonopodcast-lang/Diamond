@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ReviewSection } from "@/components/reviews/review-section";
 import { FacebookIcon, InstagramIcon, TikTokIcon } from "@/components/icons/social";
+import { normalizeImageSrc } from "@/lib/media";
 import { getBusinessBySlug } from "@/lib/queries";
 import { getServerLocale } from "@/lib/i18n/server";
 import { SINGLE_BUSINESS_SLUG, isSingleBusinessSlug } from "@/lib/single-business";
@@ -24,6 +25,8 @@ export default async function BusinessPage({ params }: { params: Promise<{ slug:
   const locale = await getServerLocale();
   const tx = (es: string, en: string) => (locale === "en" ? en : es);
   const bookingWindowEnd = addDays(new Date(), 30);
+  const coverUrl = normalizeImageSrc(business?.cover_url);
+  const logoUrl = normalizeImageSrc(business?.logo_url);
   const typedServices = (services || []) as Array<{
     id: string;
     name: string;
@@ -45,8 +48,8 @@ export default async function BusinessPage({ params }: { params: Promise<{ slug:
     <main className="mx-auto max-w-5xl space-y-6 px-4 py-8">
       <section className="lux-card overflow-hidden p-0">
         <div className="relative h-56">
-          {business.cover_url ? (
-            <Image src={business.cover_url} alt={`Cover ${business.name}`} fill className="object-cover" />
+          {coverUrl ? (
+            <Image src={coverUrl} alt={`Cover ${business.name}`} fill className="object-cover" />
           ) : (
             <div className="h-full w-full bg-gradient-to-r from-gold/20 to-silver/10" />
           )}
@@ -54,9 +57,9 @@ export default async function BusinessPage({ params }: { params: Promise<{ slug:
         </div>
         <div className="space-y-3 p-6">
           <div className="flex items-center gap-3">
-            {business.logo_url ? (
+            {logoUrl ? (
               <Image
-                src={business.logo_url}
+                src={logoUrl}
                 alt={`Logo ${business.name}`}
                 width={60}
                 height={60}
@@ -126,8 +129,8 @@ export default async function BusinessPage({ params }: { params: Promise<{ slug:
                   {items.map((service) => (
                     <div key={service.id} className="flex items-center justify-between gap-3 rounded-xl border border-silver/20 bg-black/40 p-3">
                       <div className="flex items-center gap-3">
-                        {service.image_url ? (
-                          <Image src={service.image_url} alt={service.name} width={44} height={44} className="h-11 w-11 rounded-xl object-cover" />
+                        {normalizeImageSrc(service.image_url) ? (
+                          <Image src={normalizeImageSrc(service.image_url) as string} alt={service.name} width={44} height={44} className="h-11 w-11 rounded-xl object-cover" />
                         ) : null}
                         <p>{service.name}</p>
                       </div>
@@ -182,8 +185,8 @@ export default async function BusinessPage({ params }: { params: Promise<{ slug:
         <div className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
           {publicStaff.map((member: any) => (
             <div key={member.id} className="flex items-center gap-3 rounded-2xl border border-silver/20 bg-black/40 p-3">
-              {member.avatar_url ? (
-                <Image src={member.avatar_url} alt={member.display_name} width={44} height={44} className="h-11 w-11 rounded-xl object-cover" />
+              {normalizeImageSrc(member.avatar_url) ? (
+                <Image src={normalizeImageSrc(member.avatar_url) as string} alt={member.display_name} width={44} height={44} className="h-11 w-11 rounded-xl object-cover" />
               ) : (
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold/20 text-sm font-semibold text-softGold">
                   {member.display_name

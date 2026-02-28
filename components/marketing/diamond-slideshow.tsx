@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
+import { normalizeImageSrc } from "@/lib/media";
 
 type Slide = {
   src: string;
@@ -9,7 +10,13 @@ type Slide = {
 };
 
 export function DiamondSlideshow({ slides }: { slides: Slide[] }) {
-  const usableSlides = useMemo(() => slides.filter((item) => Boolean(item.src)), [slides]);
+  const usableSlides = useMemo(
+    () =>
+      slides
+        .map((item) => ({ ...item, src: normalizeImageSrc(item.src) }))
+        .filter((item): item is Slide => Boolean(item.src)),
+    [slides]
+  );
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
