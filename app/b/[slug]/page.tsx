@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { addDays } from "date-fns";
 
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +42,29 @@ export default async function BusinessPage({ params }: { params: Promise<{ slug:
     { key: "tiktok", label: "TikTok", url: business?.tiktok_url, icon: TikTokIcon }
   ].filter((item) => item.url);
 
-  if (!business) notFound();
+  if (!business) {
+    return (
+      <main className="mx-auto max-w-4xl px-4 py-10">
+        <Card>
+          <h1 className="font-display text-3xl">{tx("Perfil no disponible", "Profile unavailable")}</h1>
+          <p className="mt-2 text-coolSilver">
+            {tx(
+              "No se encontró el negocio en este proyecto de Supabase. Verifica variables de entorno y que el negocio esté activo.",
+              "Business data was not found in this Supabase project. Verify environment variables and that the business is active."
+            )}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button asChild>
+              <Link href="/">{tx("Volver al inicio", "Back home")}</Link>
+            </Button>
+            <Button asChild variant="secondary">
+              <Link href="/dashboard/business">{tx("Abrir panel negocio", "Open business dashboard")}</Link>
+            </Button>
+          </div>
+        </Card>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto max-w-5xl space-y-6 px-4 py-8">
