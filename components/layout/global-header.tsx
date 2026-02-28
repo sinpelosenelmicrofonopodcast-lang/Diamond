@@ -25,22 +25,29 @@ export function GlobalHeader() {
     let mounted = true;
 
     async function load() {
-      const { data } = await supabase.auth.getUser();
-      if (!mounted) return;
-      setUser(data.user ?? null);
+      try {
+        const { data } = await supabase.auth.getUser();
+        if (!mounted) return;
+        setUser(data.user ?? null);
 
-      if (data.user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role, avatar_url")
-          .eq("id", data.user.id)
-          .maybeSingle();
+        if (data.user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role, avatar_url")
+            .eq("id", data.user.id)
+            .maybeSingle();
 
-        if (mounted) {
-          setRole((profile?.role as ProfileRole | undefined) ?? null);
-          setAvatarUrl(profile?.avatar_url ?? null);
+          if (mounted) {
+            setRole((profile?.role as ProfileRole | undefined) ?? null);
+            setAvatarUrl(profile?.avatar_url ?? null);
+          }
+        } else {
+          setRole(null);
+          setAvatarUrl(null);
         }
-      } else {
+      } catch {
+        if (!mounted) return;
+        setUser(null);
         setRole(null);
         setAvatarUrl(null);
       }
@@ -62,22 +69,28 @@ export function GlobalHeader() {
     let active = true;
 
     async function loadAlerts() {
-      if (!user || !isBusinessUser) {
+      try {
+        if (!user || !isBusinessUser) {
+          if (active) setAppointmentsBadge(0);
+          return;
+        }
+
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+        if (!token) return;
+
+        const res = await fetch("/api/dashboard/alerts", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const contentType = res.headers.get("content-type") || "";
+        if (!contentType.includes("application/json")) return;
+        const payload = await res.json().catch(() => ({ alerts: [] }));
+        const unread = (payload.alerts || []).filter((alert: any) => !alert.read_at);
+        if (active) setAppointmentsBadge(unread.length);
+      } catch {
         if (active) setAppointmentsBadge(0);
-        return;
       }
-
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) return;
-
-      const res = await fetch("/api/dashboard/alerts", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const payload = await res.json();
-      if (!res.ok) return;
-      const unread = (payload.alerts || []).filter((alert: any) => !alert.read_at);
-      if (active) setAppointmentsBadge(unread.length);
     }
 
     loadAlerts();
